@@ -10,9 +10,10 @@ ms-offcrypto-tool decrypts encrypted MS Office files with its intermediate key (
 ## Examples
 
 ~~~
-python ms-offcrypto-tool.py -k AE8C36E68B4BB9EA46E5544A5FDB6693875B2FDE1507CBC65C8BCF99E25C2562 encrypted.pptx decrypted.pptx
+python ms\_offcrypto\_tool.py -k AE8C36E68B4BB9EA46E5544A5FDB6693875B2FDE1507CBC65C8BCF99E25C2562 encrypted.pptx decrypted.pptx
 ~~~
 
 ~~~
-python ms-offcrypto-tool.py -s priv.pem encrypted.docx decrypted.docx
+python ms\_offcrypto\_tool.py -s priv.pem encrypted.docx decrypted.docx
 ~~~
+
