@@ -1,5 +1,3 @@
-import argparse
-
 import sys, hashlib, base64, binascii, functools
 from struct import *
 
@@ -14,9 +12,8 @@ SEGMENT_LENGTH = 4096
 def hashCalc(i):
     return hashlib.sha512(i).digest()
 
-def decrypt(key, info, ifile, ofile):
+def decrypt(key, keyDataSalt, ifile, ofile):
     obuf = b''
-    keyDataSalt = info['keyDataSalt']
     totalSize = unpack('<I', ifile.read(4))[0]
     sys.stderr.write("totalSize: {}\n".format(totalSize))
     ifile.seek(8)
@@ -30,9 +27,9 @@ def decrypt(key, info, ifile, ofile):
     ofile.write(obuf)
     return True
 
-def generate_skey_from_privkey(privkey, info):
+def generate_skey_from_privkey(privkey, encryptedKeyValue):
     privkey = PKCS1_v1_5.new(RSA.importKey(privkey))
-    skey = privkey.decrypt(info['encryptedKeyValue'], None)
+    skey = privkey.decrypt(encryptedKeyValue, None)
     return skey
 
 def parseinfo(ole):
@@ -48,7 +45,21 @@ def parseinfo(ole):
     }
     return info
 
+class OfficeFile:
+    def __init__(self, file):
+        ole = olefile.OleFileIO(file)
+        self.file = ole
+        self.info = parseinfo(ole.openstream('EncryptionInfo'))
+        self.secret_key = None
+    def load_skey(self, secret_key):
+        self.secret_key = secret_key
+    def load_privkey(self, private_key):
+        self.secret_key = generate_skey_from_privkey(private_key, self.info['encryptedKeyValue'])
+    def decrypt(self, ofile):
+        decrypt(self.secret_key, self.info['keyDataSalt'], self.file.openstream('EncryptedPackage'), ofile)
+
 def main():
+    import argparse
     parser = argparse.ArgumentParser()
     group = parser.add_mutually_exclusive_group(required=True)
     group.add_argument('-k', dest='secret_key', help='MS-OFFCRYPTO secretKey value (hex)')
@@ -60,16 +71,14 @@ def main():
     if not olefile.isOleFile(args.infile):
         raise AssertionError, "No OLE file"
 
-    ole = olefile.OleFileIO(args.infile)
-    ofile = args.outfile
+    file = OfficeFile(args.infile)
 
-    info = parseinfo(ole.openstream('EncryptionInfo'))
     if args.secret_key:
-        secret_key = binascii.unhexlify(args.secret_key)
+        file.load_skey(binascii.unhexlify(args.secret_key))
     elif args.private_key:
-        secret_key = generate_skey_from_privkey(args.private_key, info)
+        file.load_privkey(args.private_key)
 
-    decrypt(secret_key, info, ole.openstream('EncryptedPackage'), ofile)
+    file.decrypt(args.outfile)
 
 if __name__ == '__main__':
     main()
