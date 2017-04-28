@@ -69,7 +69,7 @@ def main():
     args = parser.parse_args()
 
     if not olefile.isOleFile(args.infile):
-        raise AssertionError, "No OLE file"
+        raise AssertionError("No OLE file")
 
     file = OfficeFile(args.infile)
 
