@@ -17,3 +17,8 @@ python ms_offcrypto_tool.py -k AE8C36E68B4BB9EA46E5544A5FDB6693875B2FDE1507CBC65
 python ms_offcrypto_tool.py -s priv.pem encrypted.docx decrypted.docx
 ~~~
 
+## Todo
+
+* Add tests
+* Support decryption with passwords
+* Merge to more comprehensive projects handling MS Office files (such as oletools?) if possible
