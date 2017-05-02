@@ -1,4 +1,4 @@
-import sys, hashlib, base64, binascii, functools
+import sys, hashlib, base64, binascii, functools, struct
 from struct import *
 
 from Crypto.PublicKey import RSA
@@ -34,20 +34,20 @@ def generate_skey_from_privkey(privkey, encryptedKeyValue):
 
 def generate_skey_from_password(password, saltValue, encryptedKeyValue, spinValue, blockkey):
     # Initial round sha1(salt + password)
-    h = hashlib.sha1(saltValue.decode("base64") + password.encode("UTF-16LE"))
+    h = hashlib.sha1(saltValue + password.encode("UTF-16LE"))
 
     # Iteration of 0 -> spincount-1; hash = sha1(iterator + hash)
     for i in range(0, spinValue, 1):
         h = hashlib.sha1(struct.pack("<I", i) + h.digest())
 
-    h2 = hashlib.sha1(h.digest() + blockkey.decode("hex"))
+    h2 = hashlib.sha1(h.digest() + blockkey)
     # Needed to truncate skey to bitsize
     a = h2.hexdigest()[:-8]
     skey3 = a.decode("hex")
 
     # AES encrypt the encryptedKeyValue with the skey and salt to get secret key
-    aes = AES.new(skey3, AES.MODE_CBC, salt.decode("base64"))
-    skey = aes.decrypt(encryptedKeyValue.decode("base64"))
+    aes = AES.new(skey3, AES.MODE_CBC, saltValue)
+    skey = aes.decrypt(encryptedKeyValue)
     return skey
 
 def parseinfo(ole):
@@ -56,6 +56,7 @@ def parseinfo(ole):
     saltValue = xml.getElementsByTagName('keyData')[0].getAttribute('saltValue')
     saltValue = base64.b64decode(saltValue)
     spinValue = xml.getElementsByTagNameNS("http://schemas.microsoft.com/office/2006/keyEncryptor/password", 'encryptedKey')[0].getAttribute('spinCount')
+    spinValue = int(spinValue)
     encryptedKeyValue = xml.getElementsByTagNameNS("http://schemas.microsoft.com/office/2006/keyEncryptor/password", 'encryptedKey')[0].getAttribute('encryptedKeyValue')
     encryptedKeyValue = base64.b64decode(encryptedKeyValue)
     blockkey = "146e0be7abacd0d6"
