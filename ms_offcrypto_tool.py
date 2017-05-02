@@ -32,7 +32,7 @@ def generate_skey_from_privkey(privkey, encryptedKeyValue):
     skey = privkey.decrypt(encryptedKeyValue, None)
     return skey
 
-def generate_skey_from_password(password, saltValue, encryptedKeyValue, spinValue, blockkey)
+def generate_skey_from_password(password, saltValue, encryptedKeyValue, spinValue, blockkey):
     # Initial round sha1(salt + password)
     h = hashlib.sha1(saltValue.decode("base64") + password.encode("UTF-16LE"))
 
