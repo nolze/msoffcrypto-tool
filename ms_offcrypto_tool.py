@@ -55,7 +55,7 @@ def parseinfo(ole):
     xml = parseString(ole.read())
     saltValue = xml.getElementsByTagName('keyData')[0].getAttribute('saltValue')
     saltValue = base64.b64decode(saltValue)
-    spinValue = xml.getElementsByTagNameNS("http://schemas.microsoft.com/office/2006/keyEncryptor/certificate", 'encryptedKey')[0].getAttribute('spinCount')
+    spinValue = xml.getElementsByTagNameNS("http://schemas.microsoft.com/office/2006/keyEncryptor/password", 'encryptedKey')[0].getAttribute('spinCount')
     encryptedKeyValue = xml.getElementsByTagNameNS("http://schemas.microsoft.com/office/2006/keyEncryptor/certificate", 'encryptedKey')[0].getAttribute('encryptedKeyValue')
     encryptedKeyValue = base64.b64decode(encryptedKeyValue)
     blockkey = "146e0be7abacd0d6"
