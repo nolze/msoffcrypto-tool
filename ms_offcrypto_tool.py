@@ -62,8 +62,8 @@ def parseinfo(ole):
     blockkey = blockkey.decode("hex")
     info = {
         'keyDataSalt': saltValue,
-        'encryptedKeyValue': encryptedKeyValue
-        'blockkey': blockkey
+        'encryptedKeyValue': encryptedKeyValue,
+        'blockkey': blockkey,
         'spinValue': spinValue
     }
     return info
