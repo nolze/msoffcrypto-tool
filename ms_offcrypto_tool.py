@@ -77,7 +77,7 @@ class OfficeFile:
     def load_skey(self, secret_key):
         self.secret_key = secret_key
     def load_password(self, password):
-        self.secret_key = generate_skey_from_password(password, self.info['saltValue'], self.info['encryptedKeyValue'], self.info['spinValue'], self.info['blockkey'])
+        self.secret_key = generate_skey_from_password(password, self.info['keyDataSalt'], self.info['encryptedKeyValue'], self.info['spinValue'], self.info['blockkey'])
     def load_privkey(self, private_key):
         self.secret_key = generate_skey_from_privkey(private_key, self.info['encryptedKeyValue'])
     def decrypt(self, ofile):
