@@ -1,5 +1,7 @@
 # ms-offcrypto-tool
 
+[![Build Status](https://travis-ci.org/nolze/ms-offcrypto-tool.svg?branch=master)](https://travis-ci.org/nolze/ms-offcrypto-tool)
+
 ms-offcrypto-tool decrypts encrypted MS Office files with its intermediate key (secretKey) or the private key generated its escrow key.
 
 ## References
