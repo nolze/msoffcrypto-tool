@@ -56,18 +56,14 @@ def generate_skey_from_password(password, saltValue, hashAlgorithm, encryptedKey
 def parseinfo(ole):
     ole.seek(8)
     xml = parseString(ole.read())
-    keyDataSalt = xml.getElementsByTagName('keyData')[0].getAttribute('saltValue')
-    keyDataSalt = base64.b64decode(keyDataSalt)
+    keyDataSalt = base64.b64decode(xml.getElementsByTagName('keyData')[0].getAttribute('saltValue'))
     keyDataHashAlgorithm = xml.getElementsByTagName('keyData')[0].getAttribute('hashAlgorithm')
-    spinValue = xml.getElementsByTagNameNS("http://schemas.microsoft.com/office/2006/keyEncryptor/password", 'encryptedKey')[0].getAttribute('spinCount')
-    spinValue = int(spinValue)
-    encryptedKeyValue = xml.getElementsByTagNameNS("http://schemas.microsoft.com/office/2006/keyEncryptor/password", 'encryptedKey')[0].getAttribute('encryptedKeyValue')
-    encryptedKeyValue = base64.b64decode(encryptedKeyValue)
-    passwordSalt = xml.getElementsByTagNameNS("http://schemas.microsoft.com/office/2006/keyEncryptor/password", 'encryptedKey')[0].getAttribute('saltValue')
-    passwordSalt = base64.b64decode(passwordSalt)
-    passwordHashAlgorithm = xml.getElementsByTagNameNS("http://schemas.microsoft.com/office/2006/keyEncryptor/password", 'encryptedKey')[0].getAttribute('hashAlgorithm')
-    passwordKeyBits = xml.getElementsByTagNameNS("http://schemas.microsoft.com/office/2006/keyEncryptor/password", 'encryptedKey')[0].getAttribute('keyBits')
-    passwordKeyBits = int(passwordKeyBits)
+    password_node = xml.getElementsByTagNameNS("http://schemas.microsoft.com/office/2006/keyEncryptor/password", 'encryptedKey')[0]
+    spinValue = int(password_node.getAttribute('spinCount'))
+    encryptedKeyValue = base64.b64decode(password_node.getAttribute('encryptedKeyValue'))
+    passwordSalt = base64.b64decode(password_node.getAttribute('saltValue'))
+    passwordHashAlgorithm = password_node.getAttribute('hashAlgorithm')
+    passwordKeyBits = int(password_node.getAttribute('keyBits'))
     info = {
         'keyDataSalt': keyDataSalt,
         'keyDataHashAlgorithm': keyDataHashAlgorithm,
