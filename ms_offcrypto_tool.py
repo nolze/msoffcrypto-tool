@@ -9,17 +9,20 @@ from xml.dom.minidom import parseString
 
 SEGMENT_LENGTH = 4096
 
-def hashCalc(i):
-    return hashlib.sha512(i).digest()
+def hashCalc(i, algorithm):
+    if algorithm == "SHA512":
+        return hashlib.sha512(i)
+    else:
+        return hashlib.sha1(i)
 
-def decrypt(key, keyDataSalt, ifile, ofile):
+def decrypt(key, keyDataSalt, hashAlgorithm, ifile, ofile):
     obuf = b''
     totalSize = unpack('<I', ifile.read(4))[0]
     sys.stderr.write("totalSize: {}\n".format(totalSize))
     ifile.seek(8)
     for i, ibuf in enumerate(iter(functools.partial(ifile.read, SEGMENT_LENGTH), b'')):
         saltWithBlockKey = keyDataSalt + pack('<I', i)
-        iv = hashCalc(saltWithBlockKey)
+        iv = hashCalc(saltWithBlockKey, hashAlgorithm).digest()
         iv = iv[:16]
         aes = AES.new(key, AES.MODE_CBC, iv)
         dec = aes.decrypt(ibuf)
@@ -32,15 +35,15 @@ def generate_skey_from_privkey(privkey, encryptedKeyValue):
     skey = privkey.decrypt(encryptedKeyValue, None)
     return skey
 
-def generate_skey_from_password(password, saltValue, encryptedKeyValue, spinValue, keyBits, blockkey):
+def generate_skey_from_password(password, saltValue, hashAlgorithm, encryptedKeyValue, spinValue, keyBits, blockkey):
     # Initial round sha512(salt + password)
-    h = hashlib.sha512(saltValue + password.encode("UTF-16LE"))
+    h = hashCalc(saltValue + password.encode("UTF-16LE"), hashAlgorithm)
 
     # Iteration of 0 -> spincount-1; hash = sha512(iterator + hash)
     for i in range(0, spinValue, 1):
-        h = hashlib.sha512(struct.pack("<I", i) + h.digest())
+        h = hashCalc(struct.pack("<I", i) + h.digest(), hashAlgorithm)
 
-    h2 = hashlib.sha512(h.digest() + blockkey)
+    h2 = hashCalc(h.digest() + blockkey, hashAlgorithm)
     # Needed to truncate skey to bitsize
     a = h2.hexdigest()[:2*keyBits/8]
     skey3 = a.decode("hex")
@@ -55,22 +58,26 @@ def parseinfo(ole):
     xml = parseString(ole.read())
     keyDataSalt = xml.getElementsByTagName('keyData')[0].getAttribute('saltValue')
     keyDataSalt = base64.b64decode(keyDataSalt)
+    keyDataHashAlgorithm = xml.getElementsByTagName('keyData')[0].getAttribute('hashAlgorithm')
     spinValue = xml.getElementsByTagNameNS("http://schemas.microsoft.com/office/2006/keyEncryptor/password", 'encryptedKey')[0].getAttribute('spinCount')
     spinValue = int(spinValue)
     encryptedKeyValue = xml.getElementsByTagNameNS("http://schemas.microsoft.com/office/2006/keyEncryptor/password", 'encryptedKey')[0].getAttribute('encryptedKeyValue')
     encryptedKeyValue = base64.b64decode(encryptedKeyValue)
     passwordSalt = xml.getElementsByTagNameNS("http://schemas.microsoft.com/office/2006/keyEncryptor/password", 'encryptedKey')[0].getAttribute('saltValue')
     passwordSalt = base64.b64decode(passwordSalt)
+    passwordHashAlgorithm = xml.getElementsByTagNameNS("http://schemas.microsoft.com/office/2006/keyEncryptor/password", 'encryptedKey')[0].getAttribute('hashAlgorithm')
     passwordKeyBits = xml.getElementsByTagNameNS("http://schemas.microsoft.com/office/2006/keyEncryptor/password", 'encryptedKey')[0].getAttribute('keyBits')
     passwordKeyBits = int(passwordKeyBits)
     blockkey = "146e0be7abacd0d6"
     blockkey = blockkey.decode("hex")
     info = {
         'keyDataSalt': keyDataSalt,
+        'keyDataHashAlgorithm': keyDataHashAlgorithm,
         'encryptedKeyValue': encryptedKeyValue,
         'blockkey': blockkey,
         'spinValue': spinValue,
         'passwordSalt': passwordSalt,
+        'passwordHashAlgorithm': passwordHashAlgorithm,
         'passwordKeyBits': passwordKeyBits,
     }
     return info
@@ -84,11 +91,11 @@ class OfficeFile:
     def load_skey(self, secret_key):
         self.secret_key = secret_key
     def load_password(self, password):
-        self.secret_key = generate_skey_from_password(password, self.info['passwordSalt'], self.info['encryptedKeyValue'], self.info['spinValue'], self.info['passwordKeyBits'], self.info['blockkey'])
+        self.secret_key = generate_skey_from_password(password, self.info['passwordSalt'], self.info['passwordHashAlgorithm'], self.info['encryptedKeyValue'], self.info['spinValue'], self.info['passwordKeyBits'], self.info['blockkey'])
     def load_privkey(self, private_key):
         self.secret_key = generate_skey_from_privkey(private_key, self.info['encryptedKeyValue'])
     def decrypt(self, ofile):
-        decrypt(self.secret_key, self.info['keyDataSalt'], self.file.openstream('EncryptedPackage'), ofile)
+        decrypt(self.secret_key, self.info['keyDataSalt'], self.info['keyDataHashAlgorithm'], self.file.openstream('EncryptedPackage'), ofile)
 
 def main():
     import argparse
