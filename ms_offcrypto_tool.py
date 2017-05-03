@@ -1,5 +1,5 @@
-import sys, hashlib, base64, binascii, functools, struct
-from struct import *
+import sys, hashlib, base64, binascii, functools
+from struct import pack, unpack
 
 from Crypto.PublicKey import RSA
 from Crypto.Cipher import AES, PKCS1_v1_5
@@ -41,7 +41,7 @@ def generate_skey_from_password(password, saltValue, hashAlgorithm, encryptedKey
 
     # Iteration of 0 -> spincount-1; hash = sha512(iterator + hash)
     for i in range(0, spinValue, 1):
-        h = hashCalc(struct.pack("<I", i) + h.digest(), hashAlgorithm)
+        h = hashCalc(pack("<I", i) + h.digest(), hashAlgorithm)
 
     h2 = hashCalc(h.digest() + blockkey, hashAlgorithm)
     # Needed to truncate skey to bitsize
