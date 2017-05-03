@@ -33,16 +33,16 @@ def generate_skey_from_privkey(privkey, encryptedKeyValue):
     return skey
 
 def generate_skey_from_password(password, saltValue, encryptedKeyValue, spinValue, blockkey):
-    # Initial round sha1(salt + password)
-    h = hashlib.sha1(saltValue + password.encode("UTF-16LE"))
+    # Initial round sha512(salt + password)
+    h = hashlib.sha512(saltValue + password.encode("UTF-16LE"))
 
-    # Iteration of 0 -> spincount-1; hash = sha1(iterator + hash)
+    # Iteration of 0 -> spincount-1; hash = sha512(iterator + hash)
     for i in range(0, spinValue, 1):
-        h = hashlib.sha1(struct.pack("<I", i) + h.digest())
+        h = hashlib.sha512(struct.pack("<I", i) + h.digest())
 
-    h2 = hashlib.sha1(h.digest() + blockkey)
+    h2 = hashlib.sha512(h.digest() + blockkey)
     # Needed to truncate skey to bitsize
-    a = h2.hexdigest()[:-8]
+    a = h2.hexdigest()[:2*32]
     skey3 = a.decode("hex")
 
     # AES encrypt the encryptedKeyValue with the skey and salt to get secret key
@@ -53,19 +53,22 @@ def generate_skey_from_password(password, saltValue, encryptedKeyValue, spinValu
 def parseinfo(ole):
     ole.seek(8)
     xml = parseString(ole.read())
-    saltValue = xml.getElementsByTagName('keyData')[0].getAttribute('saltValue')
-    saltValue = base64.b64decode(saltValue)
+    keyDataSalt = xml.getElementsByTagName('keyData')[0].getAttribute('saltValue')
+    keyDataSalt = base64.b64decode(keyDataSalt)
     spinValue = xml.getElementsByTagNameNS("http://schemas.microsoft.com/office/2006/keyEncryptor/password", 'encryptedKey')[0].getAttribute('spinCount')
     spinValue = int(spinValue)
     encryptedKeyValue = xml.getElementsByTagNameNS("http://schemas.microsoft.com/office/2006/keyEncryptor/password", 'encryptedKey')[0].getAttribute('encryptedKeyValue')
     encryptedKeyValue = base64.b64decode(encryptedKeyValue)
+    passwordSalt = xml.getElementsByTagNameNS("http://schemas.microsoft.com/office/2006/keyEncryptor/password", 'encryptedKey')[0].getAttribute('saltValue')
+    passwordSalt = base64.b64decode(passwordSalt)
     blockkey = "146e0be7abacd0d6"
     blockkey = blockkey.decode("hex")
     info = {
-        'keyDataSalt': saltValue,
+        'keyDataSalt': keyDataSalt,
         'encryptedKeyValue': encryptedKeyValue,
         'blockkey': blockkey,
-        'spinValue': spinValue
+        'spinValue': spinValue,
+        'passwordSalt': passwordSalt,
     }
     return info
 
@@ -78,7 +81,7 @@ class OfficeFile:
     def load_skey(self, secret_key):
         self.secret_key = secret_key
     def load_password(self, password):
-        self.secret_key = generate_skey_from_password(password, self.info['keyDataSalt'], self.info['encryptedKeyValue'], self.info['spinValue'], self.info['blockkey'])
+        self.secret_key = generate_skey_from_password(password, self.info['passwordSalt'], self.info['encryptedKeyValue'], self.info['spinValue'], self.info['blockkey'])
     def load_privkey(self, private_key):
         self.secret_key = generate_skey_from_privkey(private_key, self.info['encryptedKeyValue'])
     def decrypt(self, ofile):
