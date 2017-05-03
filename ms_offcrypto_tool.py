@@ -32,7 +32,7 @@ def generate_skey_from_privkey(privkey, encryptedKeyValue):
     skey = privkey.decrypt(encryptedKeyValue, None)
     return skey
 
-def generate_skey_from_password(password, saltValue, encryptedKeyValue, spinValue, blockkey):
+def generate_skey_from_password(password, saltValue, encryptedKeyValue, spinValue, keyBits, blockkey):
     # Initial round sha512(salt + password)
     h = hashlib.sha512(saltValue + password.encode("UTF-16LE"))
 
@@ -42,7 +42,7 @@ def generate_skey_from_password(password, saltValue, encryptedKeyValue, spinValu
 
     h2 = hashlib.sha512(h.digest() + blockkey)
     # Needed to truncate skey to bitsize
-    a = h2.hexdigest()[:2*32]
+    a = h2.hexdigest()[:2*keyBits/8]
     skey3 = a.decode("hex")
 
     # AES encrypt the encryptedKeyValue with the skey and salt to get secret key
@@ -61,6 +61,8 @@ def parseinfo(ole):
     encryptedKeyValue = base64.b64decode(encryptedKeyValue)
     passwordSalt = xml.getElementsByTagNameNS("http://schemas.microsoft.com/office/2006/keyEncryptor/password", 'encryptedKey')[0].getAttribute('saltValue')
     passwordSalt = base64.b64decode(passwordSalt)
+    passwordKeyBits = xml.getElementsByTagNameNS("http://schemas.microsoft.com/office/2006/keyEncryptor/password", 'encryptedKey')[0].getAttribute('keyBits')
+    passwordKeyBits = int(passwordKeyBits)
     blockkey = "146e0be7abacd0d6"
     blockkey = blockkey.decode("hex")
     info = {
@@ -69,6 +71,7 @@ def parseinfo(ole):
         'blockkey': blockkey,
         'spinValue': spinValue,
         'passwordSalt': passwordSalt,
+        'passwordKeyBits': passwordKeyBits,
     }
     return info
 
@@ -81,7 +84,7 @@ class OfficeFile:
     def load_skey(self, secret_key):
         self.secret_key = secret_key
     def load_password(self, password):
-        self.secret_key = generate_skey_from_password(password, self.info['passwordSalt'], self.info['encryptedKeyValue'], self.info['spinValue'], self.info['blockkey'])
+        self.secret_key = generate_skey_from_password(password, self.info['passwordSalt'], self.info['encryptedKeyValue'], self.info['spinValue'], self.info['passwordKeyBits'], self.info['blockkey'])
     def load_privkey(self, private_key):
         self.secret_key = generate_skey_from_privkey(private_key, self.info['encryptedKeyValue'])
     def decrypt(self, ofile):
