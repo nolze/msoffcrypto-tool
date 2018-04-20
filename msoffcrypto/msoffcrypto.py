@@ -1,8 +1,10 @@
 import sys, hashlib, base64, binascii, functools
 from struct import pack, unpack
 
-from Crypto.PublicKey import RSA
-from Crypto.Cipher import AES, PKCS1_v1_5
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import padding
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 import olefile
 from xml.dom.minidom import parseString
@@ -24,15 +26,16 @@ def decrypt(key, keyDataSalt, hashAlgorithm, ifile, ofile):
         saltWithBlockKey = keyDataSalt + pack('<I', i)
         iv = hashCalc(saltWithBlockKey, hashAlgorithm).digest()
         iv = iv[:16]
-        aes = AES.new(key, AES.MODE_CBC, iv)
-        dec = aes.decrypt(ibuf)
+        aes = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+        decryptor = aes.decryptor()
+        dec = decryptor.update(ibuf) + decryptor.finalize()
         obuf += dec
     ofile.write(obuf)
     return True
 
 def generate_skey_from_privkey(privkey, encryptedKeyValue):
-    privkey = PKCS1_v1_5.new(RSA.importKey(privkey))
-    skey = privkey.decrypt(encryptedKeyValue, None)
+    privkey = serialization.load_pem_private_key(privkey.read(), password=None, backend=default_backend())
+    skey = privkey.decrypt(encryptedKeyValue, padding.PKCS1v15())
     return skey
 
 def generate_skey_from_password(password, saltValue, hashAlgorithm, encryptedKeyValue, spinValue, keyBits):
@@ -49,8 +52,9 @@ def generate_skey_from_password(password, saltValue, hashAlgorithm, encryptedKey
     skey3 = h2.digest()[:keyBits//8]
 
     # AES encrypt the encryptedKeyValue with the skey and salt to get secret key
-    aes = AES.new(skey3, AES.MODE_CBC, saltValue)
-    skey = aes.decrypt(encryptedKeyValue)
+    aes = Cipher(algorithms.AES(skey3), modes.CBC(saltValue), backend=default_backend())
+    decryptor = aes.decryptor()
+    skey = decryptor.update(encryptedKeyValue) + decryptor.finalize()
     return skey
 
 def parseinfo(ole):
