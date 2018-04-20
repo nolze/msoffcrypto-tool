@@ -1,2 +1,0 @@
-olefile >= 0.44
-PyCrypto >= 2.6.1
