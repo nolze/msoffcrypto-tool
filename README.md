@@ -1,6 +1,6 @@
 # msoffcrypto-tool
 
-[![Build Status](https://travis-ci.org/nolze/ms-offcrypto-tool.svg?branch=master)](https://travis-ci.org/nolze/ms-offcrypto-tool)
+[![Build Status](https://travis-ci.org/nolze/msoffcrypto-tool.svg?branch=master)](https://travis-ci.org/nolze/msoffcrypto-tool)
 
 msoffcrypto-tool (formerly ms-offcrypto-tool) is a Python tool and library for decrypting encrypted MS Office files with the password, or with the intermediate key (secretKey), or with the private key which generated its escrow key.
 
