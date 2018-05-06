@@ -1,4 +1,4 @@
-import sys, hashlib, base64, binascii, functools
+import sys, hashlib, base64, binascii, functools, os
 from struct import pack, unpack
 
 from cryptography.hazmat.backends import default_backend
@@ -88,7 +88,7 @@ class OfficeFile:
         self.file = ole
         self.info = parseinfo(ole.openstream('EncryptionInfo'))
         if self.info == {}:
-                    raise AssertionError("Unsupported EncryptionInfo version")
+            raise AssertionError("Unsupported EncryptionInfo version")
         self.secret_key = None
     def load_skey(self, secret_key):
         self.secret_key = secret_key
@@ -98,6 +98,11 @@ class OfficeFile:
         self.secret_key = generate_skey_from_privkey(private_key, self.info['encryptedKeyValue'])
     def decrypt(self, ofile):
         decrypt(self.secret_key, self.info['keyDataSalt'], self.info['keyDataHashAlgorithm'], self.file.openstream('EncryptedPackage'), ofile)
+
+def IfWIN32SetBinary(io):
+    if sys.platform == 'win32':
+        import msvcrt
+        msvcrt.setmode(io.fileno(), os.O_BINARY)
 
 def main():
     import argparse
@@ -122,6 +127,9 @@ def main():
     elif args.password:
         file.load_password(args.password)
 
+    if args.outfile == None:
+        IfWIN32SetBinary(sys.stdout)
+        args.outfile = sys.stdout
     file.decrypt(args.outfile)
 
 if __name__ == '__main__':
