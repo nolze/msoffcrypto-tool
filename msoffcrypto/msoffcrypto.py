@@ -58,6 +58,9 @@ def generate_skey_from_password(password, saltValue, hashAlgorithm, encryptedKey
     return skey
 
 def parseinfo(ole):
+    versionMajor, versionMinor = unpack('<HH', ole.read(4))
+    if versionMajor != 4 or versionMinor != 4:
+        return {}
     ole.seek(8)
     xml = parseString(ole.read())
     keyDataSalt = base64.b64decode(xml.getElementsByTagName('keyData')[0].getAttribute('saltValue'))
@@ -84,6 +87,8 @@ class OfficeFile:
         ole = olefile.OleFileIO(file)
         self.file = ole
         self.info = parseinfo(ole.openstream('EncryptionInfo'))
+        if self.info == {}:
+                    raise AssertionError("Unsupported EncryptionInfo version")
         self.secret_key = None
     def load_skey(self, secret_key):
         self.secret_key = secret_key
