@@ -60,7 +60,7 @@ def generate_skey_from_password(password, saltValue, hashAlgorithm, encryptedKey
 def parseinfo(ole):
     versionMajor, versionMinor = unpack('<HH', ole.read(4))
     if versionMajor != 4 or versionMinor != 4:
-        return {}
+        raise AssertionError("Unsupported EncryptionInfo version")
     ole.seek(8)
     xml = parseString(ole.read())
     keyDataSalt = base64.b64decode(xml.getElementsByTagName('keyData')[0].getAttribute('saltValue'))
@@ -87,8 +87,6 @@ class OfficeFile:
         ole = olefile.OleFileIO(file)
         self.file = ole
         self.info = parseinfo(ole.openstream('EncryptionInfo'))
-        if self.info == {}:
-            raise AssertionError("Unsupported EncryptionInfo version")
         self.secret_key = None
     def load_skey(self, secret_key):
         self.secret_key = secret_key
@@ -99,7 +97,7 @@ class OfficeFile:
     def decrypt(self, ofile):
         decrypt(self.secret_key, self.info['keyDataSalt'], self.info['keyDataHashAlgorithm'], self.file.openstream('EncryptedPackage'), ofile)
 
-def IfWIN32SetBinary(io):
+def ifWIN32SetBinary(io):
     if sys.platform == 'win32':
         import msvcrt
         msvcrt.setmode(io.fileno(), os.O_BINARY)
@@ -128,7 +126,7 @@ def main():
         file.load_password(args.password)
 
     if args.outfile == None:
-        IfWIN32SetBinary(sys.stdout)
+        ifWIN32SetBinary(sys.stdout)
         args.outfile = sys.stdout
     file.decrypt(args.outfile)
 
