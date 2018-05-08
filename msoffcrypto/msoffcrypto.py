@@ -137,7 +137,7 @@ def main():
 
     if args.outfile == None:
         ifWIN32SetBinary(sys.stdout)
-        args.outfile = sys.stdout
+        args.outfile = sys.stdout.buffer
     
     file.decrypt(args.outfile)
 
