@@ -9,6 +9,11 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import olefile
 from xml.dom.minidom import parseString
 
+import logging
+
+logger = logging.getLogger(__name__)
+logger.addHandler(logging.NullHandler())
+
 SEGMENT_LENGTH = 4096
 
 def hashCalc(i, algorithm):
@@ -20,7 +25,7 @@ def hashCalc(i, algorithm):
 def decrypt(key, keyDataSalt, hashAlgorithm, ifile, ofile):
     obuf = b''
     totalSize = unpack('<I', ifile.read(4))[0]
-    sys.stderr.write("totalSize: {}\n".format(totalSize))
+    logger.debug("totalSize: {}".format(totalSize))
     ifile.seek(8)
     for i, ibuf in enumerate(iter(functools.partial(ifile.read, SEGMENT_LENGTH), b'')):
         saltWithBlockKey = keyDataSalt + pack('<I', i)
@@ -109,6 +114,7 @@ def main():
     group.add_argument('-k', dest='secret_key', help='MS-OFFCRYPTO secretKey value (hex)')
     group.add_argument('-p', dest='private_key', type=argparse.FileType('rb'), help='RSA private key file')
     group.add_argument('-P', dest='password', help='Password ASCII')
+    parser.add_argument('-v', dest='verbose', action='store_true', help='Print verbose information')
     parser.add_argument('infile', nargs='?', type=argparse.FileType('rb'))
     parser.add_argument('outfile', nargs='?', type=argparse.FileType('wb'))
     args = parser.parse_args()
@@ -117,6 +123,10 @@ def main():
         raise AssertionError("No OLE file")
 
     file = OfficeFile(args.infile)
+
+    if args.verbose:
+        logger.removeHandler(logging.NullHandler())
+        logging.basicConfig(level=logging.DEBUG, format="%(message)s")
 
     if args.secret_key:
         file.load_skey(binascii.unhexlify(args.secret_key))
@@ -128,6 +138,7 @@ def main():
     if args.outfile == None:
         ifWIN32SetBinary(sys.stdout)
         args.outfile = sys.stdout
+    
     file.decrypt(args.outfile)
 
 if __name__ == '__main__':
