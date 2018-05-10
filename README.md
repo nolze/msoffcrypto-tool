@@ -2,7 +2,7 @@
 
 [![Build Status](https://travis-ci.org/nolze/msoffcrypto-tool.svg?branch=master)](https://travis-ci.org/nolze/msoffcrypto-tool)
 
-msoffcrypto-tool (formerly ms-offcrypto-tool) is a Python tool and library for decrypting encrypted MS Office files with the password, or with the intermediate key (secretKey), or with the private key which generated its escrow key.
+msoffcrypto-tool (formerly ms-offcrypto-tool) is a Python tool and library for decrypting encrypted MS Office files with password, intermediate key, or private key which generated its escrow key.
 
 Older PoC version: <https://github.com/nolze/ms-offcrypto-tool/tree/v0.1.0> 
 
@@ -58,19 +58,34 @@ file.load_key(password="Passw0rd")
 file.decrypt(open("decrypted.docx", "wb"))
 ```
 
+## Supported methods
+
+* [x] ECMA-376
+  * [x] MS-DOCX (OOXML) (Word 2007-2016)
+  * [x] MS-XLSX (OOXML) (Excel 2007-2016)
+* [x] Office Binary Document RC4
+  * [x] MS-DOC (Word 97-2004)
+  * [ ] MS-XLS (Excel 97-2004)
+* [ ] Office Binary Document RC4 CryptoAPI
+* [ ] XOR Obfuscation
+* [ ] Word 95 Encryption
+
+PRs welcome!
+
 ## Todo
 
 * [x] Add tests
 * [x] Support decryption with passwords
-* [ ] Merge to more comprehensive projects handling MS Office files (such as oletools?) if possible
-* [ ] Support older encryption schemes
+* [x] Support older encryption schemes
 * [ ] Upload to PyPI
+* [ ] Merge to more comprehensive projects handling MS Office files (such as oletools?) if possible
 
 ## References
 
 * "Backdooring MS Office documents with secret master keys" <http://secuinside.com/archive/2015/2015-1-9.pdf>
 * [MS-OFFCRYPTO] Agile Encryption <https://msdn.microsoft.com/en-us/library/dd949735(v=office.12).aspx>
-* core/oox/source/crypto at master · LibreOffice/core <https://github.com/LibreOffice/core/tree/master/oox/source/crypto>
+* LibreOffice/core <https://github.com/LibreOffice/core>
+* LibreOffice/mso-dumper <https://github.com/LibreOffice/mso-dumper>
 
 ## Alternatives
 
