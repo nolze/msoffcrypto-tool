@@ -6,7 +6,7 @@ logger.addHandler(logging.NullHandler())
 
 import olefile
 
-from .officefile import OfficeFile
+from .msoffcrypto import OfficeFile
 
 def ifWIN32SetBinary(io):
     if sys.platform == 'win32':
