@@ -1,1 +1,1 @@
-from .msoffcrypto import *
+from .officefile import OfficeFile
