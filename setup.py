@@ -20,7 +20,7 @@ setup(
     ],
     entry_points={
         'console_scripts': [
-            'msoffcrypto-tool = msoffcrypto',
+            'msoffcrypto-tool = msoffcrypto.__main__:main',
         ],
     },
 )
