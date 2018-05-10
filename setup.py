@@ -11,6 +11,8 @@ setup(
     keywords='',
     packages=[
         "msoffcrypto",
+        "msoffcrypto.format",
+        "msoffcrypto.method",
     ],
     install_requires=[
         'olefile >= 0.44',
