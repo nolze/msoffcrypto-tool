@@ -86,6 +86,7 @@ PRs welcome!
 * [MS-OFFCRYPTO] Agile Encryption <https://msdn.microsoft.com/en-us/library/dd949735(v=office.12).aspx>
 * LibreOffice/core <https://github.com/LibreOffice/core>
 * LibreOffice/mso-dumper <https://github.com/LibreOffice/mso-dumper>
+* wvDecrypt <http://www.skynet.ie/~caolan/Packages/wvDecrypt.html>
 
 ## Alternatives
 
