@@ -43,8 +43,11 @@ def main():
     
     if args.outfile == None:
         ifWIN32SetBinary(sys.stdout)
-        args.outfile = sys.stdout.buffer
-    
+        if hasattr(sys.stdout, 'buffer'): ## For Python 2
+            args.outfile = sys.stdout.buffer
+        else:
+            args.outfile = sys.stdout
+
     file.decrypt(args.outfile)
 
 if __name__ == '__main__':
