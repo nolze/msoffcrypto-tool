@@ -4,7 +4,7 @@
 
 msoffcrypto-tool (formerly ms-offcrypto-tool) is a Python tool and library for decrypting encrypted MS Office files with password, intermediate key, or private key which generated its escrow key.
 
-Older PoC version: <https://github.com/nolze/ms-offcrypto-tool/tree/v0.1.0> 
+Early PoC version: <https://github.com/nolze/ms-offcrypto-tool/tree/v0.1.0> 
 
 ## Install/Uninstall
 
@@ -58,7 +58,7 @@ file.load_key(password="Passw0rd")
 file.decrypt(open("decrypted.docx", "wb"))
 ```
 
-## Supported methods
+## Supported encryption methods
 
 * [x] ECMA-376
   * [x] MS-DOCX (OOXML) (Word 2007-2016)
@@ -77,8 +77,11 @@ PRs welcome!
 * [x] Add tests
 * [x] Support decryption with passwords
 * [x] Support older encryption schemes
-* [ ] Upload to PyPI
-* [ ] Merge to more comprehensive projects handling MS Office files (such as oletools?) if possible
+* [ ] Add function-level tests
+* [ ] Add API documents
+* [ ] Publish to PyPI
+* [ ] Add decryption tests for various file formats
+* [ ] Merge to more comprehensive projects handling MS Office files (such as [oletools](https://github.com/decalage2/oletools/)?) if possible
 
 ## References
 
@@ -92,3 +95,8 @@ PRs welcome!
 
 * herumi/msoffice <https://github.com/herumi/msoffice>
 * DocRecrypt <https://blogs.technet.microsoft.com/office_resource_kit/2013/01/23/now-you-can-reset-or-remove-a-password-from-a-word-excel-or-powerpoint-filewith-office-2013/>
+
+## Use cases and mentions
+
+* <https://github.com/jbremer/sflock/commit/3f6a96abe1dbb4405e4fb7fd0d16863f634b09fb>
+* <https://github.com/dtjohnson/xlsx-populate>
