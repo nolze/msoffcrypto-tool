@@ -57,3 +57,14 @@ class OOXMLFile(base.BaseOfficeFile):
     def decrypt(self, ofile):
         obuf = ECMA376.decrypt(self.secret_key, self.info['keyDataSalt'], self.info['keyDataHashAlgorithm'], self.file.openstream('EncryptedPackage'))
         ofile.write(obuf)
+
+    ## For backward compatibility; Should be removed in 4.0
+    def load_password(self, password):
+        self.load_key(password=password)
+    
+    def load_privkey(self, privkey):
+        self.load_key(private_key=privkey)
+    
+    def load_skey(self, skey):
+        self.load_key(secret_key=skey)
+    
