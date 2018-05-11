@@ -3,7 +3,7 @@ from hashlib import md5
 from struct import pack
 
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())

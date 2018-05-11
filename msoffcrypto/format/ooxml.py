@@ -1,7 +1,7 @@
-import sys, hashlib, base64, binascii, functools, os
-from struct import pack, unpack
-from xml.dom.minidom import parseString
 import logging
+import base64
+from struct import unpack
+from xml.dom.minidom import parseString
 
 import olefile
 

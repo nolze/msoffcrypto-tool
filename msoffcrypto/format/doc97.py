@@ -1,8 +1,6 @@
-import sys, hashlib, base64, binascii, functools, os, io, shutil, tempfile
-from struct import pack, unpack, unpack_from
-from collections import OrderedDict, namedtuple
-import itertools
-import logging
+import logging, io, shutil, tempfile
+from struct import pack, unpack_from
+from collections import namedtuple
 
 import olefile
 
