@@ -1,9 +1,7 @@
 import sys, hashlib, base64, binascii, functools, os, io
 from struct import pack, unpack
-from xml.dom.minidom import parseString
 import logging
 
-import olefile
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
@@ -37,7 +35,7 @@ class ECMA376:
             decryptor = aes.decryptor()
             dec = decryptor.update(ibuf) + decryptor.finalize()
             obuf.write(dec)
-        return obuf.getbuffer()
+        return obuf.getvalue() # return obuf.getbuffer()
 
     @staticmethod
     def generate_skey_from_privkey(privkey, encryptedKeyValue):
