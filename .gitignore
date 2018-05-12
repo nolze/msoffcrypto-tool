@@ -1,3 +1,7 @@
+docs/_static/
+docs/_templates/
+docs/_build/
+
 ### https://raw.github.com/github/gitignore/4bff4a2986af526650f1d329d97047dc1fa87599/Python.gitignore
 
 # Byte-compiled / optimized / DLL files
