@@ -1,9 +1,15 @@
 import olefile
 
 def OfficeFile(file):
-    '''
-    Return an office file object based on the format of given file.
-    
+    '''Return an office file object based on the format of given file.
+
+    Args:
+        file (:obj:`_io.BufferedReader`): Input file.
+
+    Returns:
+        BaseOfficeFile object.
+        
+    Examples:    
         >>> f = open("tests/inputs/example_password.docx", "rb")
         >>> officefile = OfficeFile(f)
         >>> officefile.keyTypes
