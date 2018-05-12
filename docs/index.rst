@@ -11,7 +11,7 @@ msoffcrypto-tool
    :caption: Contents:
     
    cli
-   modules
+   msoffcrypto
 
 Indices and tables
 ==================
