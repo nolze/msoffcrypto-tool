@@ -11,8 +11,6 @@ Early PoC version: <https://github.com/nolze/ms-offcrypto-tool/tree/v0.1.0>
 
 ## Install
 
-#### Install
-
 ```
 pip install msoffcrypto-tool
 ```
@@ -64,9 +62,9 @@ PRs welcome!
 * [x] Add tests
 * [x] Support decryption with passwords
 * [x] Support older encryption schemes
-* [ ] Add function-level tests
-* [ ] Add API documents
-* [ ] Publish to PyPI
+* [x] Add function-level tests
+* [x] Add API documents
+* [x] Publish to PyPI
 * [ ] Add decryption tests for various file formats
 * [ ] Merge to more comprehensive projects handling MS Office files (such as [oletools](https://github.com/decalage2/oletools/)?) if possible
 
