@@ -7,6 +7,7 @@ python:
 cache: pip
 install:
   - pip install .
+  - pip install coverage codecov
 script:
   - tests/tests.sh
   - nosetests -c .noserc
