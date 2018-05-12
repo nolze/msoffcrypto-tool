@@ -4,6 +4,8 @@ setup(
     name='msoffcrypto-tool',
     version='4.0.0',
     description='A Python tool and library for decrypting MS Office files with passwords or other secrets',
+    long_description=open("README.md", "r").read(),
+    long_description_content_type='text/markdown',
     url='https://github.com/nolze/msoffcrypto-tool',
     author='nolze',
     author_email='nolze@archlinux.us',
