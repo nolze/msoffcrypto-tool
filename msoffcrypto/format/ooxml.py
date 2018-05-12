@@ -44,7 +44,7 @@ class OOXMLFile(base.BaseOfficeFile):
         self.info = _parseinfo(self.file.openstream('EncryptionInfo'))
         self.secret_key = None
         ## TODO: Support aliases?
-        self.keyTypes = ['password', 'private_key', 'secret_key']
+        self.keyTypes = ('password', 'private_key', 'secret_key')
 
     def load_key(self, password=None, private_key=None, secret_key=None):
         if password:

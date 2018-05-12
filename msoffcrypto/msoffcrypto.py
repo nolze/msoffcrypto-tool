@@ -1,6 +1,14 @@
 import olefile
 
 def OfficeFile(file):
+    '''
+    Return an office file object based on the format of given file.
+    
+        >>> f = open("tests/inputs/example_password.docx", "rb")
+        >>> officefile = OfficeFile(f)
+        >>> officefile.keyTypes
+        ('password', 'private_key', 'secret_key')
+    '''
     ole = olefile.OleFileIO(file)
     
     ## MS-DOC: The WordDocument stream MUST be present in the file.

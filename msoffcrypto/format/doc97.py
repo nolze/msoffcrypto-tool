@@ -45,6 +45,19 @@ FibBase = namedtuple('FibBase', [
 ])
 
 def _parseFibBase(blob):
+    r'''
+    Pasrse FibBase binary blob.
+    
+        >>> blob = io.BytesIO(b'\xec\xa5\xc1\x00G\x00\t\x04\x00\x00\x00\x13\xbf\x004\x00\
+        ... \x00\x00\x00\x10\x00\x00\x00\x00\x00\x04\x00\x00\x16\x04\x00\x00')
+        >>> fibbase = _parseFibBase(blob)
+        >>> hex(fibbase.wIdent)
+        '0xa5ec'
+        >>> hex(fibbase.nFib)
+        '0xc1'
+        >>> hex(fibbase.fExtChar)
+        '0x1'
+    '''
     getBit = lambda bits, i: (bits & (1 << i)) >> i
     getBitSlice = lambda bits, i, w: (bits & (2 ** w - 1 << i)) >> i
     

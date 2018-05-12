@@ -9,6 +9,15 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 def _makekey(password, salt, block):   
+    r'''
+    Return a intermediate key.
+    
+        >>> password = 'password1'
+        >>> salt = b'\xe8w,\x1d\x91\xc5j7\x96Ga\xb2\x80\x182\x17'
+        >>> block = 0
+        >>> _makekey(password, salt, block)
+        b' \xbf2\xdd\xf5@\x85\x8cQ7D\xaf\x0f$\xe0<'
+    '''
     ## https://msdn.microsoft.com/en-us/library/dd920360(v=office.12).aspx
     password = password.encode("UTF-16LE")
     h0 = md5(password).digest()
@@ -27,6 +36,16 @@ class DocumentRC4:
     
     @staticmethod
     def verifypw(password, salt, encryptedVerifier, encryptedVerifierHash):
+        r'''
+        Return True if the given password is valid.
+        
+            >>> password = 'password1'
+            >>> salt = b'\xe8w,\x1d\x91\xc5j7\x96Ga\xb2\x80\x182\x17'
+            >>> encryptedVerifier = b'\xc9\xe9\x97\xd4T\x97=1\x0b\xb1\xbap\x14&\x83~'
+            >>> encryptedVerifierHash = b'\xb1\xde\x17\x8f\x07\xe9\x89\xc4M\xae^L\xf9j\xc4\x07'
+            >>> DocumentRC4.verifypw(password, salt, encryptedVerifier, encryptedVerifierHash)
+            True
+        '''
         ## https://msdn.microsoft.com/en-us/library/dd952648(v=office.12).aspx
         block = 0
         key = _makekey(password, salt, block)
@@ -39,17 +58,20 @@ class DocumentRC4:
         return hash == verfiferHash
     
     @staticmethod
-    def decrypt(password, salt, ifile):
+    def decrypt(password, salt, ibuf):
+        r'''
+        Return decrypted data.
+        '''
         obuf = io.BytesIO()
     
         block = 0
         key = _makekey(password, salt, block)
     
-        for c, ibuf in enumerate(iter(functools.partial(ifile.read, 0x200), b'')):
+        for c, buf in enumerate(iter(functools.partial(ibuf.read, 0x200), b'')):
             cipher = Cipher(algorithms.ARC4(key), mode=None, backend=default_backend())
             decryptor = cipher.decryptor()
 
-            dec = decryptor.update(ibuf) + decryptor.finalize()
+            dec = decryptor.update(buf) + decryptor.finalize()
             obuf.write(dec)
             
             ## From wvDecrypt:

@@ -21,19 +21,26 @@ class ECMA376:
         pass
 
     @staticmethod
-    def decrypt(key, keyDataSalt, hashAlgorithm, ifile):
+    def decrypt(key, keyDataSalt, hashAlgorithm, ibuf):
+        r'''
+        Return decrypted data.
+        
+            >>> key = b'@ f\t\xd9\xfa\xad\xf2K\x07j\xeb\xf2\xc45\xb7B\x92\xc8\xb8\xa7\xaa\x81\xbcg\x9b\xe8\x97\x11\xb0*\xc2'
+            >>> keyDataSalt = b'\x8f\xc7x"+P\x8d\xdcL\xe6\x8c\xdd\x15<\x16\xb4'
+            >>> hashAlgorithm = 'SHA512'
+        '''
         SEGMENT_LENGTH = 4096
         obuf = io.BytesIO()
-        totalSize = unpack('<I', ifile.read(4))[0]
+        totalSize = unpack('<I', ibuf.read(4))[0]
         logger.debug("totalSize: {}".format(totalSize))
-        ifile.seek(8)
-        for i, ibuf in enumerate(iter(functools.partial(ifile.read, SEGMENT_LENGTH), b'')):
+        ibuf.seek(8)
+        for i, buf in enumerate(iter(functools.partial(ibuf.read, SEGMENT_LENGTH), b'')):
             saltWithBlockKey = keyDataSalt + pack('<I', i)
             iv = _hashCalc(saltWithBlockKey, hashAlgorithm).digest()
             iv = iv[:16]
             aes = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
             decryptor = aes.decryptor()
-            dec = decryptor.update(ibuf) + decryptor.finalize()
+            dec = decryptor.update(buf) + decryptor.finalize()
             obuf.write(dec)
         return obuf.getvalue() # return obuf.getbuffer()
 
@@ -45,6 +52,18 @@ class ECMA376:
 
     @staticmethod
     def generate_skey_from_password(password, saltValue, hashAlgorithm, encryptedKeyValue, spinValue, keyBits):
+        r'''
+        Generate intermediate key from given password.
+        
+            >>> password = 'Password1234_'
+            >>> saltValue = b'Lr]E\xdca\x0f\x93\x94\x12\xa0M\xa7\x91\x04f'
+            >>> hashAlgorithm = 'SHA512'
+            >>> encryptedKeyValue = b"\xa1l\xd5\x16Zz\xb9\xd2q\x11>\xd3\x86\xa7\x8c\xf4\x96\x92\xe8\xe5'\xb0\xc5\xfc\x00U\xed\x08\x0b|\xb9K"
+            >>> spinValue = 100000
+            >>> keyBits = 256
+            >>> ECMA376.generate_skey_from_password(password, saltValue, hashAlgorithm, encryptedKeyValue, spinValue, keyBits)
+            b'@ f\t\xd9\xfa\xad\xf2K\x07j\xeb\xf2\xc45\xb7B\x92\xc8\xb8\xa7\xaa\x81\xbcg\x9b\xe8\x97\x11\xb0*\xc2'
+        '''
         block3 = bytearray([0x14, 0x6e, 0x0b, 0xe7, 0xab, 0xac, 0xd0, 0xd6])
         # Initial round sha512(salt + password)
         h = _hashCalc(saltValue + password.encode("UTF-16LE"), hashAlgorithm)
