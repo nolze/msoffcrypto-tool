@@ -18,6 +18,10 @@ setup(
         'olefile >= 0.44',
         'cryptography >= 2.0.0',
     ],
+    test_require=[
+        'nose >= 1.3.7',
+        'coverage >= 4.5.1', 
+    ],
     classifiers=[
     ],
     entry_points={
