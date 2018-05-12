@@ -32,12 +32,10 @@ def main():
         logger.removeHandler(logging.NullHandler())
         logging.basicConfig(level=logging.DEBUG, format="%(message)s")
 
-    if args.secret_key:
-        file.load_key(secret_key=binascii.unhexlify(args.secret_key))
-    elif args.private_key:
-        file.load_key(private_key=args.private_key)
-    elif args.password:
+    if args.password:
         file.load_key(password=args.password)
+    else:
+        raise AssertionError("Password is required")
     
     if args.outfile == None:
         ifWIN32SetBinary(sys.stdout)
