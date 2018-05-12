@@ -15,8 +15,9 @@ def _makekey(password, salt, block):
         >>> password = 'password1'
         >>> salt = b'\xe8w,\x1d\x91\xc5j7\x96Ga\xb2\x80\x182\x17'
         >>> block = 0
-        >>> _makekey(password, salt, block)
-        b' \xbf2\xdd\xf5@\x85\x8cQ7D\xaf\x0f$\xe0<'
+        >>> expected = b' \xbf2\xdd\xf5@\x85\x8cQ7D\xaf\x0f$\xe0<'
+        >>> _makekey(password, salt, block) == expected
+        True
     '''
     ## https://msdn.microsoft.com/en-us/library/dd920360(v=office.12).aspx
     password = password.encode("UTF-16LE")
