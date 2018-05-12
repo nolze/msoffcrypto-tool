@@ -1,5 +1,6 @@
 # msoffcrypto-tool
 
+[![PyPI version](https://badge.fury.io/py/msoffcrypto-tool.svg)](https://badge.fury.io/py/msoffcrypto-tool)
 [![Build Status](https://travis-ci.org/nolze/msoffcrypto-tool.svg?branch=master)](https://travis-ci.org/nolze/msoffcrypto-tool)
 [![Coverage Status](https://codecov.io/gh/nolze/msoffcrypto-tool/branch/master/graph/badge.svg)](https://codecov.io/gh/nolze/msoffcrypto-tool)
 [![Documentation Status](https://readthedocs.org/projects/msoffcrypto-tool/badge/?version=latest)](http://msoffcrypto-tool.readthedocs.io/en/latest/?badge=latest)
@@ -8,18 +9,12 @@ msoffcrypto-tool (formerly ms-offcrypto-tool) is a Python tool and library for d
 
 Early PoC version: <https://github.com/nolze/ms-offcrypto-tool/tree/v0.1.0> 
 
-## Install/Uninstall
+## Install
 
 #### Install
 
 ```
-pip install git+https://github.com/nolze/msoffcrypto-tool
-```
-
-#### Uninstall
-
-```
-pip uninstall msoffcrypto-tool
+pip install msoffcrypto-tool
 ```
 
 ## Examples
