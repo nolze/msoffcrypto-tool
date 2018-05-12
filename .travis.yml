@@ -2,14 +2,22 @@ notifications:
   email: false
 language: python
 python:
-  - "2.7"
-  - "3.6"
+- '2.7'
+- '3.6'
 cache: pip
 install:
-  - pip install .
-  - pip install coverage codecov
+- pip install .
+- pip install coverage codecov
 script:
-  - tests/tests.sh
-  - nosetests -c .noserc
+- tests/tests.sh
+- nosetests -c .noserc
 after_success:
-  - codecov
+- codecov
+deploy:
+  provider: pypi
+  user: "nolze"
+  password:
+    secure: vXIbwz+ylzeDFtMrzGMRk2yT2d/CA0mG4ucofsEURVZPBJyx9kuuAg7+KH+hoT6OtJyMrn3dxGB1bLTr77ijsD7PQyZWcgrMMGLTIMAMqgx9gHgJ3Fb7osGJNwLEyyLlAfbQi51k7TaufZ/nO6OQRHPyAmuK/Dz6SypL65VEkAaWmmQc5GRS/HhRLzQf9603PV/b+blIi/V5WRnI/xNO2bAVa6H0Fv3rJfhmbLN7Q866cqNCLn/NmSpEO25SLYzgbe1nSU4OksirIhVy2+IrT/BKCU+1oYXbaglonl3MwCzNW+HRU9YKM9jvb5GqgHuSntxmqCf3o0DnwFEliwVPYo6tIDKXeJyHXc+eLEBXyesbeaacTC+hwXR9s04P/unuEyX45veXW4JZOwET8qQhR4eyfXAgYc+Gafinha05tElATEXVK/F2mAAQxzgm/wwTTfdF4A/Op7pTgxeH/lewvPhAuKqyWQIcRbaXMp7vFRTg+6lROJbKtIEw7Ouimv8wZXBKJVEIs5Ggo5bfynyGzUa+HwO1DpfHgYTvU/Ofq4iVBTCaXDD9ZIkzoO+lc2mEjSRxfe3m5jUDp77UG541akE4tLwKVX+6EnVVxAjAVJ0wjMGVg/G3koGv46BBj2dUvFWGzi5OLP96jnJgRmdQEpoLUkkbxfCJTTGn847afwo=
+  on:
+    tags: true
+  allow_failure: false
