@@ -48,6 +48,7 @@ file.decrypt(open("decrypted.docx", "wb"))
 * [x] ECMA-376
   * [x] MS-DOCX (OOXML) (Word 2007-2016)
   * [x] MS-XLSX (OOXML) (Excel 2007-2016)
+  * [x] MS-PPTX (OOXML) (PowerPoint 2007-2016)
 * [x] Office Binary Document RC4
   * [x] MS-DOC (Word 97-2004)
   * [ ] MS-XLS (Excel 97-2004)
