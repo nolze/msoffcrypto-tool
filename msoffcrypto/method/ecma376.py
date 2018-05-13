@@ -30,9 +30,11 @@ class ECMA376:
             >>> hashAlgorithm = 'SHA512'
         '''
         SEGMENT_LENGTH = 4096
+        
         obuf = io.BytesIO()
         totalSize = unpack('<I', ibuf.read(4))[0]
         logger.debug("totalSize: {}".format(totalSize))
+        remaining = totalSize
         ibuf.seek(8)
         for i, buf in enumerate(iter(functools.partial(ibuf.read, SEGMENT_LENGTH), b'')):
             saltWithBlockKey = keyDataSalt + pack('<I', i)
@@ -41,7 +43,10 @@ class ECMA376:
             aes = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
             decryptor = aes.decryptor()
             dec = decryptor.update(buf) + decryptor.finalize()
+            if remaining < len(buf):
+                dec = dec[:remaining]
             obuf.write(dec)
+            remaining -= len(buf)
         return obuf.getvalue() # return obuf.getbuffer()
 
     @staticmethod
