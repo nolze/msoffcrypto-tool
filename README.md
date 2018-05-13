@@ -45,16 +45,27 @@ file.decrypt(open("decrypted.docx", "wb"))
 
 ## Supported encryption methods
 
+### MS-OFFCRYPTO specs
+
 * [x] ECMA-376
   * [x] MS-DOCX (OOXML) (Word 2007-2016)
   * [x] MS-XLSX (OOXML) (Excel 2007-2016)
   * [x] MS-PPTX (OOXML) (PowerPoint 2007-2016)
 * [x] Office Binary Document RC4
-  * [x] MS-DOC (Word 97-2004)
-  * [ ] MS-XLS (Excel 97-2004)
+  * [x] MS-DOC (Word 97, 98, 2000)
+  * [ ] MS-XLS (Excel 97, 98, 2000)
+  * [ ] MS-PPT (PowerPoint 97, 98, 2000)
 * [ ] Office Binary Document RC4 CryptoAPI
+  * [x] MS-DOC (Word 2002, 2003, 2004)
+  * [ ] MS-XLS (Excel 2002, 2003, 2004)
+  * [ ] MS-PPT (PowerPoint 2002, 2003, 2004)
 * [ ] XOR Obfuscation
-* [ ] Word 95 Encryption
+
+### Other
+
+* [ ] Word 95 Encryption (Word 95 and prior)
+* [ ] Excel 95 Encryption (Excel 95 and prior)
+* [ ] PowerPoint 95 Encryption (PowerPoint 95 and prior)
 
 PRs welcome!
 
@@ -68,14 +79,19 @@ PRs welcome!
 * [x] Publish to PyPI
 * [ ] Add decryption tests for various file formats
 * [ ] Merge to more comprehensive projects handling MS Office files (such as [oletools](https://github.com/decalage2/oletools/)?) if possible
+* [ ] Support decrypting ecnrypted marcos
+* [ ] Support decrypting ecnrypted Excel worksheets
+* [ ] Support decrypting editing protection
 
 ## References
 
 * "Backdooring MS Office documents with secret master keys" <http://secuinside.com/archive/2015/2015-1-9.pdf>
-* [MS-OFFCRYPTO] Agile Encryption <https://msdn.microsoft.com/en-us/library/dd949735(v=office.12).aspx>
+* Technical Documents <https://msdn.microsoft.com/en-us/library/cc313105.aspx>
+  * [MS-OFFCRYPTO] Agile Encryption <https://msdn.microsoft.com/en-us/library/dd949735(v=office.12).aspx>
 * LibreOffice/core <https://github.com/LibreOffice/core>
 * LibreOffice/mso-dumper <https://github.com/LibreOffice/mso-dumper>
 * wvDecrypt <http://www.skynet.ie/~caolan/Packages/wvDecrypt.html>
+* Microsoft Office password protection - Wikipedia <https://en.wikipedia.org/wiki/Microsoft_Office_password_protection#History_of_Microsoft_Encryption_password>
 
 ## Alternatives
 
