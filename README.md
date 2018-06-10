@@ -47,7 +47,7 @@ file.decrypt(open("decrypted.docx", "wb"))
 
 ### MS-OFFCRYPTO specs
 
-* [x] ECMA-376
+* [x] ECMA-376 (Agile Encryption)
   * [x] MS-DOCX (OOXML) (Word 2007-2016)
   * [x] MS-XLSX (OOXML) (Excel 2007-2016)
   * [x] MS-PPTX (OOXML) (PowerPoint 2007-2016)
@@ -55,8 +55,10 @@ file.decrypt(open("decrypted.docx", "wb"))
   * [x] MS-DOC (Word 97, 98, 2000)
   * [ ] MS-XLS (Excel 97, 98, 2000)
   * [ ] MS-PPT (PowerPoint 97, 98, 2000)
+* [ ] ECMA-376 (Standard Encryption)
+* [ ] ECMA-376 (Extensible Encryption)
 * [ ] Office Binary Document RC4 CryptoAPI
-  * [x] MS-DOC (Word 2002, 2003, 2004)
+  * [ ] MS-DOC (Word 2002, 2003, 2004)
   * [ ] MS-XLS (Excel 2002, 2003, 2004)
   * [ ] MS-PPT (PowerPoint 2002, 2003, 2004)
 * [ ] XOR Obfuscation
@@ -79,7 +81,7 @@ PRs welcome!
 * [x] Publish to PyPI
 * [ ] Add decryption tests for various file formats
 * [ ] Merge to more comprehensive projects handling MS Office files (such as [oletools](https://github.com/decalage2/oletools/)?) if possible
-* [ ] Support decrypting ecnrypted marcos
+* [ ] Support decrypting ecnrypted macros
 * [ ] Support decrypting ecnrypted Excel worksheets
 * [ ] Support decrypting editing protection
 
