@@ -61,10 +61,10 @@ class OOXMLFile(base.BaseOfficeFile):
     def load_key(self, password=None, private_key=None, secret_key=None):
         if password:
             if self.type == 'agile':
-                self.secret_key = ECMA376Agile.generate_skey_from_password(password, self.info['passwordSalt'], self.info['passwordHashAlgorithm'], self.info['encryptedKeyValue'], self.info['spinValue'], self.info['passwordKeyBits'])        
+                self.secret_key = ECMA376Agile.makekey_from_password(password, self.info['passwordSalt'], self.info['passwordHashAlgorithm'], self.info['encryptedKeyValue'], self.info['spinValue'], self.info['passwordKeyBits'])
         elif private_key:
             if self.type == 'agile':
-                self.secret_key = ECMA376Agile.generate_skey_from_privkey(private_key, self.info['encryptedKeyValue'])
+                self.secret_key = ECMA376Agile.makekey_from_privkey(private_key, self.info['encryptedKeyValue'])
         elif secret_key:
             self.secret_key = secret_key
 

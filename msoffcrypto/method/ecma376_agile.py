@@ -50,13 +50,13 @@ class ECMA376Agile:
         return obuf.getvalue() # return obuf.getbuffer()
 
     @staticmethod
-    def generate_skey_from_privkey(privkey, encryptedKeyValue):
+    def makekey_from_privkey(privkey, encryptedKeyValue):
         privkey = serialization.load_pem_private_key(privkey.read(), password=None, backend=default_backend())
         skey = privkey.decrypt(encryptedKeyValue, padding.PKCS1v15())
         return skey
 
     @staticmethod
-    def generate_skey_from_password(password, saltValue, hashAlgorithm, encryptedKeyValue, spinValue, keyBits):
+    def makekey_from_password(password, saltValue, hashAlgorithm, encryptedKeyValue, spinValue, keyBits):
         r'''
         Generate intermediate key from given password.
         
@@ -67,7 +67,7 @@ class ECMA376Agile:
             >>> spinValue = 100000
             >>> keyBits = 256
             >>> expected = b'@ f\t\xd9\xfa\xad\xf2K\x07j\xeb\xf2\xc45\xb7B\x92\xc8\xb8\xa7\xaa\x81\xbcg\x9b\xe8\x97\x11\xb0*\xc2'
-            >>> ECMA376Agile.generate_skey_from_password(password, saltValue, hashAlgorithm, encryptedKeyValue, spinValue, keyBits) == expected
+            >>> ECMA376Agile.makekey_from_password(password, saltValue, hashAlgorithm, encryptedKeyValue, spinValue, keyBits) == expected
             True
         '''
         block3 = bytearray([0x14, 0x6e, 0x0b, 0xe7, 0xab, 0xac, 0xd0, 0xd6])
