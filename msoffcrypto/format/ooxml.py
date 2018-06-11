@@ -38,9 +38,9 @@ def _parseinfo(ole):
     if versionMajor == 4 and versionMinor == 4: # Agile
         return 'agile', _parseinfo_agile(ole)
     elif versionMajor in [2, 3, 4] and versionMinor == 2: # Standard
-        raise AssertionError("Unsupported EncryptionInfo version (Standard Ecnryption)")
+        raise AssertionError("Unsupported EncryptionInfo version (Standard Encryption)")
     elif versionMajor in [3, 4] and versionMinor == 3: # Extensible
-        raise AssertionError("Unsupported EncryptionInfo version (Extensible Ecnryption)")
+        raise AssertionError("Unsupported EncryptionInfo version (Extensible Encryption)")
 
 class OOXMLFile(base.BaseOfficeFile):
     def __init__(self, file):
