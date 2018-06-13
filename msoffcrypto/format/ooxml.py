@@ -1,5 +1,5 @@
 import logging
-import base64
+import base64, io
 from struct import unpack
 from xml.dom.minidom import parseString
 
@@ -7,9 +7,72 @@ import olefile
 
 from . import base
 from ..method.ecma376_agile import ECMA376Agile
+from ..method.ecma376_standard import ECMA376Standard
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
+def _parse_encryptionheader(blob):
+    flags, = unpack('<I', blob.read(4))
+    # if mode == 'strict': compare values with spec.
+    sizeExtra, = unpack('<I', blob.read(4))
+    algId, = unpack('<I', blob.read(4))
+    algIdHash, = unpack('<I', blob.read(4))
+    keySize, = unpack('<I', blob.read(4))
+    providerType, = unpack('<I', blob.read(4))
+    reserved1, = unpack('<I', blob.read(4))
+    reserved2, = unpack('<I', blob.read(4))
+    cspName = blob.read().decode('utf-16le')
+    header = {
+        'flags': flags,
+        'sizeExtra': sizeExtra,
+        'algId': algId,
+        'algIdHash': algIdHash,
+        'keySize': keySize,
+        'providerType': providerType,
+        'reserved1': reserved1,
+        'reserved2': reserved2,
+        'cspName': cspName,
+    }
+    return header
+
+def _parse_encryptionverifier(blob, algorithm):
+    saltSize, = unpack('<I', blob.read(4))
+    salt = blob.read(16)
+    encryptedVerifier = blob.read(16)
+    verifierHashSize, = unpack('<I', blob.read(4))
+    if algorithm == 'RC4':
+        encryptedVerifierHash = blob.read(20)
+    elif algorithm == 'AES':
+        encryptedVerifierHash = blob.read(32)
+    verifier = {
+        'saltSize': saltSize,
+        'salt': salt,
+        'encryptedVerifier': encryptedVerifier,
+        'verifierHashSize': verifierHashSize,
+        'encryptedVerifierHash': encryptedVerifierHash,
+    }
+    return verifier
+
+def _parseinfo_standard(ole):
+    headerFlags, = unpack('<I', ole.read(4))
+    encryptionHeaderSize, = unpack('<I', ole.read(4))
+    block = ole.read(encryptionHeaderSize)
+    blob = io.BytesIO(block)
+    header = _parse_encryptionheader(blob)
+    block = ole.read()
+    blob = io.BytesIO(block)
+    algIdMap = {
+        0x0000660E: 'AES-128',
+        0x0000660F: 'AES-192',   
+        0x00006610: 'AES-256',     
+    }
+    verifier = _parse_encryptionverifier(blob, "AES" if header['algId'] & 0xFF00 == 0x6600 else "RC4") ## TODO: Fix
+    info = {
+        'header': header,
+        'verifier': verifier,
+    }
+    return info
 
 def _parseinfo_agile(ole):
     ole.seek(8)
@@ -38,7 +101,8 @@ def _parseinfo(ole):
     if versionMajor == 4 and versionMinor == 4: # Agile
         return 'agile', _parseinfo_agile(ole)
     elif versionMajor in [2, 3, 4] and versionMinor == 2: # Standard
-        raise AssertionError("Unsupported EncryptionInfo version (Standard Encryption)")
+        return 'standard', _parseinfo_standard(ole)
+        # raise AssertionError("Unsupported EncryptionInfo version (Standard Encryption)")
     elif versionMajor in [3, 4] and versionMinor == 3: # Extensible
         raise AssertionError("Unsupported EncryptionInfo version (Extensible Encryption)")
 
@@ -53,8 +117,7 @@ class OOXMLFile(base.BaseOfficeFile):
             ## TODO: Support aliases?
             self.keyTypes = ('password', 'private_key', 'secret_key')
         elif self.type == 'standard':
-            self.keyTypes = ('password',)
-            pass
+            self.keyTypes = ('password', 'secret_key')
         elif self.type == 'extensible':
             pass
 
@@ -62,6 +125,17 @@ class OOXMLFile(base.BaseOfficeFile):
         if password:
             if self.type == 'agile':
                 self.secret_key = ECMA376Agile.makekey_from_password(password, self.info['passwordSalt'], self.info['passwordHashAlgorithm'], self.info['encryptedKeyValue'], self.info['spinValue'], self.info['passwordKeyBits'])
+            elif self.type == 'standard':
+                self.secret_key = ECMA376Standard.makekey_from_password(
+                    password,
+                    self.info['header']['algId'],
+                    self.info['header']['algIdHash'],
+                    self.info['header']['providerType'],
+                    self.info['header']['keySize'],
+                    self.info['verifier']['saltSize'],
+                    self.info['verifier']['salt']
+                )
+                # ECMA376Standard.verifykey(self.secret_key, self.info['verifier']['encryptedVerifier'], self.info['verifier']['encryptedVerifierHash'])
         elif private_key:
             if self.type == 'agile':
                 self.secret_key = ECMA376Agile.makekey_from_privkey(private_key, self.info['encryptedKeyValue'])
@@ -71,6 +145,9 @@ class OOXMLFile(base.BaseOfficeFile):
     def decrypt(self, ofile):
         if self.type == 'agile':
             obuf = ECMA376Agile.decrypt(self.secret_key, self.info['keyDataSalt'], self.info['keyDataHashAlgorithm'], self.file.openstream('EncryptedPackage'))
+            ofile.write(obuf)
+        elif self.type == 'standard':
+            obuf = ECMA376Standard.decrypt(self.secret_key, self.file.openstream('EncryptedPackage'))
             ofile.write(obuf)
 
     ## For backward compatibility; Should be removed in 4.0
