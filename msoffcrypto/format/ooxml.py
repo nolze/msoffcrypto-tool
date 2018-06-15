@@ -12,6 +12,7 @@ from ..method.ecma376_standard import ECMA376Standard
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
+
 def _parse_encryptionheader(blob):
     flags, = unpack('<I', blob.read(4))
     # if mode == 'strict': compare values with spec.
@@ -36,6 +37,7 @@ def _parse_encryptionheader(blob):
     }
     return header
 
+
 def _parse_encryptionverifier(blob, algorithm):
     saltSize, = unpack('<I', blob.read(4))
     salt = blob.read(16)
@@ -54,6 +56,7 @@ def _parse_encryptionverifier(blob, algorithm):
     }
     return verifier
 
+
 def _parseinfo_standard(ole):
     headerFlags, = unpack('<I', ole.read(4))
     encryptionHeaderSize, = unpack('<I', ole.read(4))
@@ -64,15 +67,16 @@ def _parseinfo_standard(ole):
     blob = io.BytesIO(block)
     algIdMap = {
         0x0000660E: 'AES-128',
-        0x0000660F: 'AES-192',   
-        0x00006610: 'AES-256',     
+        0x0000660F: 'AES-192',
+        0x00006610: 'AES-256',
     }
-    verifier = _parse_encryptionverifier(blob, "AES" if header['algId'] & 0xFF00 == 0x6600 else "RC4") ## TODO: Fix
+    verifier = _parse_encryptionverifier(blob, "AES" if header['algId'] & 0xFF00 == 0x6600 else "RC4")  # TODO: Fix
     info = {
         'header': header,
         'verifier': verifier,
     }
     return info
+
 
 def _parseinfo_agile(ole):
     ole.seek(8)
@@ -96,15 +100,16 @@ def _parseinfo_agile(ole):
     }
     return info
 
+
 def _parseinfo(ole):
     versionMajor, versionMinor = unpack('<HH', ole.read(4))
-    if versionMajor == 4 and versionMinor == 4: # Agile
+    if versionMajor == 4 and versionMinor == 4:  # Agile
         return 'agile', _parseinfo_agile(ole)
-    elif versionMajor in [2, 3, 4] and versionMinor == 2: # Standard
+    elif versionMajor in [2, 3, 4] and versionMinor == 2:  # Standard
         return 'standard', _parseinfo_standard(ole)
-        # raise AssertionError("Unsupported EncryptionInfo version (Standard Encryption)")
-    elif versionMajor in [3, 4] and versionMinor == 3: # Extensible
+    elif versionMajor in [3, 4] and versionMinor == 3:  # Extensible
         raise AssertionError("Unsupported EncryptionInfo version (Extensible Encryption)")
+
 
 class OOXMLFile(base.BaseOfficeFile):
     def __init__(self, file):
@@ -114,7 +119,7 @@ class OOXMLFile(base.BaseOfficeFile):
         self.type, self.info = _parseinfo(self.file.openstream('EncryptionInfo'))
         self.secret_key = None
         if self.type == 'agile':
-            ## TODO: Support aliases?
+            # TODO: Support aliases?
             self.keyTypes = ('password', 'private_key', 'secret_key')
         elif self.type == 'standard':
             self.keyTypes = ('password', 'secret_key')
@@ -124,7 +129,14 @@ class OOXMLFile(base.BaseOfficeFile):
     def load_key(self, password=None, private_key=None, secret_key=None):
         if password:
             if self.type == 'agile':
-                self.secret_key = ECMA376Agile.makekey_from_password(password, self.info['passwordSalt'], self.info['passwordHashAlgorithm'], self.info['encryptedKeyValue'], self.info['spinValue'], self.info['passwordKeyBits'])
+                self.secret_key = ECMA376Agile.makekey_from_password(
+                    password,
+                    self.info['passwordSalt'],
+                    self.info['passwordHashAlgorithm'],
+                    self.info['encryptedKeyValue'],
+                    self.info['spinValue'],
+                    self.info['passwordKeyBits']
+                )
             elif self.type == 'standard':
                 self.secret_key = ECMA376Standard.makekey_from_password(
                     password,
@@ -144,18 +156,22 @@ class OOXMLFile(base.BaseOfficeFile):
 
     def decrypt(self, ofile):
         if self.type == 'agile':
-            obuf = ECMA376Agile.decrypt(self.secret_key, self.info['keyDataSalt'], self.info['keyDataHashAlgorithm'], self.file.openstream('EncryptedPackage'))
+            obuf = ECMA376Agile.decrypt(
+                self.secret_key, self.info['keyDataSalt'],
+                self.info['keyDataHashAlgorithm'],
+                self.file.openstream('EncryptedPackage')
+            )
             ofile.write(obuf)
         elif self.type == 'standard':
             obuf = ECMA376Standard.decrypt(self.secret_key, self.file.openstream('EncryptedPackage'))
             ofile.write(obuf)
 
-    ## For backward compatibility; Should be removed in 4.0
+    # For backward compatibility; Should be removed in 4.0
     def load_password(self, password):
         self.load_key(password=password)
-    
+
     def load_privkey(self, privkey):
         self.load_key(private_key=privkey)
-    
+
     def load_skey(self, skey):
         self.load_key(secret_key=skey)
