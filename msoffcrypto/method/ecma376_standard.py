@@ -70,7 +70,7 @@ class ECMA376Standard:
             >>> ECMA376Agile.makekey_from_password(password, algId, algIdHash, providerType, keySize, saltSize, salt) == expected
             True
         '''
-        xor_bytes = lambda a, b: bytearray([chr(ord(p) ^ ord(q)) for p, q in zip(a, b)])  # For Python 2 compat.
+        xor_bytes = lambda a, b: bytearray([p ^ q for p, q in zip(bytearray(a), bytearray(b))]) ## bytearray() for Python 2 compat.
 
         # https://msdn.microsoft.com/en-us/library/dd925430(v=office.12).aspx
         ITER_COUNT = 50000
