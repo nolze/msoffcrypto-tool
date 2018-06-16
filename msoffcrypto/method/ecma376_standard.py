@@ -16,6 +16,10 @@ class ECMA376Standard:
 
     @staticmethod
     def decrypt(key, ibuf):
+        r'''
+        Return decrypted data.
+
+        '''
         obuf = io.BytesIO()
         totalSize = unpack('<I', ibuf.read(4))[0]
         logger.debug("totalSize: {}".format(totalSize))
@@ -29,6 +33,16 @@ class ECMA376Standard:
 
     @staticmethod
     def verifykey(key, encryptedVerifier, encryptedVerifierHash):
+        r'''
+        Return True if the given intermediate key is valid.
+        
+            >>> key = b'@\xb1:q\xf9\x0b\x96n7T\x08\xf2\xd1\x81\xa1\xaa'
+            >>> encryptedVerifier = b'Qos.\x96o\xac\x17\xb1\xc5\xd7\xd8\xcc6\xc9('
+            >>> encryptedVerifierHash = b'+ah\xda\xbe)\x11\xad+\xd3|\x17Ft\\\x14\xd3\xcf\x1b\xb1@\xa4\x8fNo=#\x88\x08r\xb1j'
+            >>> ECMA376Standard.verifykey(key, encryptedVerifier, encryptedVerifierHash)
+            True
+        '''
+        logger.debug([key, encryptedVerifier, encryptedVerifierHash])
         # https://msdn.microsoft.com/en-us/library/dd926426(v=office.12).aspx
         aes = Cipher(algorithms.AES(key), modes.ECB(), backend=default_backend())
         decryptor = aes.decryptor()
@@ -41,6 +55,21 @@ class ECMA376Standard:
 
     @staticmethod
     def makekey_from_password(password, algId, algIdHash, providerType, keySize, saltSize, salt):
+        logger.debug([password, hex(algId), hex(algIdHash), hex(providerType), keySize, saltSize, salt])
+        r'''
+        Generate intermediate key from given password.
+        
+            >>> password = 'Password1234_'
+            >>> algId = 0x660e
+            >>> algIdHash = 0x8004
+            >>> providerType = 0x18
+            >>> keySize = 128
+            >>> saltSize = 16
+            >>> salt = b'\xe8\x82fI\x0c[\xd1\xee\xbd+C\x94\xe3\xf80\xef'
+            >>> expected = b'@\xb1:q\xf9\x0b\x96n7T\x08\xf2\xd1\x81\xa1\xaa'
+            >>> ECMA376Agile.makekey_from_password(password, algId, algIdHash, providerType, keySize, saltSize, salt) == expected
+            True
+        '''
         xor_bytes = lambda a, b: bytearray([p ^ q for p, q in zip(a, b)])
 
         # https://msdn.microsoft.com/en-us/library/dd925430(v=office.12).aspx

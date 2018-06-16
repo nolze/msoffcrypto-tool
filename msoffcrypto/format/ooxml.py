@@ -147,7 +147,7 @@ class OOXMLFile(base.BaseOfficeFile):
                     self.info['verifier']['saltSize'],
                     self.info['verifier']['salt']
                 )
-                # ECMA376Standard.verifykey(self.secret_key, self.info['verifier']['encryptedVerifier'], self.info['verifier']['encryptedVerifierHash'])
+                ECMA376Standard.verifykey(self.secret_key, self.info['verifier']['encryptedVerifier'], self.info['verifier']['encryptedVerifierHash'])
         elif private_key:
             if self.type == 'agile':
                 self.secret_key = ECMA376Agile.makekey_from_privkey(private_key, self.info['encryptedKeyValue'])
