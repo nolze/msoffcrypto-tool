@@ -126,7 +126,7 @@ class OOXMLFile(base.BaseOfficeFile):
         elif self.type == 'extensible':
             pass
 
-    def load_key(self, password=None, private_key=None, secret_key=None):
+    def load_key(self, password=None, private_key=None, secret_key=None, strict=False):
         if password:
             if self.type == 'agile':
                 self.secret_key = ECMA376Agile.makekey_from_password(
@@ -147,10 +147,20 @@ class OOXMLFile(base.BaseOfficeFile):
                     self.info['verifier']['saltSize'],
                     self.info['verifier']['salt']
                 )
-                ECMA376Standard.verifykey(self.secret_key, self.info['verifier']['encryptedVerifier'], self.info['verifier']['encryptedVerifierHash'])
+                verified = ECMA376Standard.verifykey(
+                    self.secret_key,
+                    self.info['verifier']['encryptedVerifier'],
+                    self.info['verifier']['encryptedVerifierHash']
+                )
+                if not verified:
+                    raise AssertionError()
+            elif self.type == 'extensible':
+                pass
         elif private_key:
             if self.type == 'agile':
                 self.secret_key = ECMA376Agile.makekey_from_privkey(private_key, self.info['encryptedKeyValue'])
+            else:
+                raise AssertionError("Unsupported key type for the encryption method")
         elif secret_key:
             self.secret_key = secret_key
 

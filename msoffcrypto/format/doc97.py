@@ -63,22 +63,22 @@ def _parseFibBase(blob):
     getBitSlice = lambda bits, i, w: (bits & (2 ** w - 1 << i)) >> i
 
     # https://msdn.microsoft.com/en-us/library/dd944620(v=office.12).aspx
-    buf = unpack_from("<H", blob.read(2))[0]
+    buf, = unpack_from("<H", blob.read(2))
     wIdent = buf
 
-    buf = unpack_from("<H", blob.read(2))[0]
+    buf, = unpack_from("<H", blob.read(2))
     nFib = buf
 
-    buf = unpack_from("<H", blob.read(2))[0]
+    buf, = unpack_from("<H", blob.read(2))
     unused = buf
 
-    buf = unpack_from("<H", blob.read(2))[0]
+    buf, = unpack_from("<H", blob.read(2))
     lid = buf
 
-    buf = unpack_from("<H", blob.read(2))[0]
+    buf, = unpack_from("<H", blob.read(2))
     pnNext = buf
 
-    buf = unpack_from("<H", blob.read(2))[0]
+    buf, = unpack_from("<H", blob.read(2))
     fDot = getBit(buf, 0)
     fGlsy = getBit(buf, 1)
     fComplex = getBit(buf, 2)
@@ -93,16 +93,16 @@ def _parseFibBase(blob):
     fFarEast = getBit(buf, 14)
     fObfuscation = getBit(buf, 15)
 
-    buf = unpack_from("<H", blob.read(2))[0]
+    buf, = unpack_from("<H", blob.read(2))
     nFibBack = buf
 
-    buf = unpack_from("<I", blob.read(4))[0]
+    buf, = unpack_from("<I", blob.read(4))
     IKey = buf
 
-    buf = unpack_from("<B", blob.read(1))[0]
+    buf, = unpack_from("<B", blob.read(1))
     envr = buf
 
-    buf = unpack_from("<B", blob.read(1))[0]
+    buf, = unpack_from("<B", blob.read(1))
     fMac = getBit(buf, 0)
     fEmptySpecial = getBit(buf, 1)
     fLoadOverridePage = getBit(buf, 2)
@@ -110,16 +110,16 @@ def _parseFibBase(blob):
     reserved2 = getBit(buf, 4)
     fSpare0 = getBitSlice(buf, 5, 3)
 
-    buf = unpack_from("<H", blob.read(2))[0]
+    buf, = unpack_from("<H", blob.read(2))
     reserved3 = buf
 
-    buf = unpack_from("<H", blob.read(2))[0]
+    buf, = unpack_from("<H", blob.read(2))
     reserved4 = buf
 
-    buf = unpack_from("<I", blob.read(4))[0]
+    buf, = unpack_from("<I", blob.read(4))
     reserved5 = buf
 
-    buf = unpack_from("<I", blob.read(4))[0]
+    buf, = unpack_from("<I", blob.read(4))
     reserved6 = buf
 
     fibbase = FibBase(
