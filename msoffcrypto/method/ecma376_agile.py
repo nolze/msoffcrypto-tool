@@ -10,11 +10,13 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
+
 def _hashCalc(i, algorithm):
     if algorithm == "SHA512":
         return hashlib.sha512(i)
     else:
         return hashlib.sha1(i)
+
 
 class ECMA376Agile:
     def __init__(self):
@@ -24,13 +26,13 @@ class ECMA376Agile:
     def decrypt(key, keyDataSalt, hashAlgorithm, ibuf):
         r'''
         Return decrypted data.
-        
+
             >>> key = b'@ f\t\xd9\xfa\xad\xf2K\x07j\xeb\xf2\xc45\xb7B\x92\xc8\xb8\xa7\xaa\x81\xbcg\x9b\xe8\x97\x11\xb0*\xc2'
             >>> keyDataSalt = b'\x8f\xc7x"+P\x8d\xdcL\xe6\x8c\xdd\x15<\x16\xb4'
             >>> hashAlgorithm = 'SHA512'
         '''
         SEGMENT_LENGTH = 4096
-        
+
         obuf = io.BytesIO()
         totalSize = unpack('<I', ibuf.read(4))[0]
         logger.debug("totalSize: {}".format(totalSize))
@@ -47,7 +49,7 @@ class ECMA376Agile:
                 dec = dec[:remaining]
             obuf.write(dec)
             remaining -= len(buf)
-        return obuf.getvalue() # return obuf.getbuffer()
+        return obuf.getvalue()  # return obuf.getbuffer()
 
     @staticmethod
     def makekey_from_privkey(privkey, encryptedKeyValue):
@@ -59,7 +61,7 @@ class ECMA376Agile:
     def makekey_from_password(password, saltValue, hashAlgorithm, encryptedKeyValue, spinValue, keyBits):
         r'''
         Generate intermediate key from given password.
-        
+
             >>> password = 'Password1234_'
             >>> saltValue = b'Lr]E\xdca\x0f\x93\x94\x12\xa0M\xa7\x91\x04f'
             >>> hashAlgorithm = 'SHA512'
@@ -80,7 +82,7 @@ class ECMA376Agile:
 
         h2 = _hashCalc(h.digest() + block3, hashAlgorithm)
         # Needed to truncate skey to bitsize
-        skey3 = h2.digest()[:keyBits//8]
+        skey3 = h2.digest()[:keyBits // 8]
 
         # AES encrypt the encryptedKeyValue with the skey and salt to get secret key
         aes = Cipher(algorithms.AES(skey3), modes.CBC(saltValue), backend=default_backend())

@@ -44,10 +44,11 @@ FibBase = namedtuple('FibBase', [
     'reserved6',
 ])
 
+
 def _parseFibBase(blob):
     r'''
     Pasrse FibBase binary blob.
-    
+
         >>> blob = io.BytesIO(b'\xec\xa5\xc1\x00G\x00\t\x04\x00\x00\x00\x13\xbf\x004\x00\
         ... \x00\x00\x00\x10\x00\x00\x00\x00\x00\x04\x00\x00\x16\x04\x00\x00')
         >>> fibbase = _parseFibBase(blob)
@@ -60,23 +61,23 @@ def _parseFibBase(blob):
     '''
     getBit = lambda bits, i: (bits & (1 << i)) >> i
     getBitSlice = lambda bits, i, w: (bits & (2 ** w - 1 << i)) >> i
-    
-    ## https://msdn.microsoft.com/en-us/library/dd944620(v=office.12).aspx
+
+    # https://msdn.microsoft.com/en-us/library/dd944620(v=office.12).aspx
     buf = unpack_from("<H", blob.read(2))[0]
     wIdent = buf
-    
+
     buf = unpack_from("<H", blob.read(2))[0]
     nFib = buf
-    
+
     buf = unpack_from("<H", blob.read(2))[0]
     unused = buf
-    
+
     buf = unpack_from("<H", blob.read(2))[0]
-    lid = buf    
-    
+    lid = buf
+
     buf = unpack_from("<H", blob.read(2))[0]
     pnNext = buf
-    
+
     buf = unpack_from("<H", blob.read(2))[0]
     fDot = getBit(buf, 0)
     fGlsy = getBit(buf, 1)
@@ -91,7 +92,7 @@ def _parseFibBase(blob):
     fLoadOverride = getBit(buf, 13)
     fFarEast = getBit(buf, 14)
     fObfuscation = getBit(buf, 15)
-    
+
     buf = unpack_from("<H", blob.read(2))[0]
     nFibBack = buf
 
@@ -100,7 +101,7 @@ def _parseFibBase(blob):
 
     buf = unpack_from("<B", blob.read(1))[0]
     envr = buf
-    
+
     buf = unpack_from("<B", blob.read(1))[0]
     fMac = getBit(buf, 0)
     fEmptySpecial = getBit(buf, 1)
@@ -156,26 +157,27 @@ def _parseFibBase(blob):
     )
     return fibbase
 
+
 def _packFibBase(fibbase):
     setBit = lambda bits, i, v: (bits & ~(1 << i)) | (v << i)
-    setBitSlice = lambda bits, i, w, v: (bits & ~((2**w-1) << i)) | ((v & (2**w-1)) << i)
-    
+    setBitSlice = lambda bits, i, w, v: (bits & ~((2**w - 1) << i)) | ((v & (2**w - 1)) << i)
+
     blob = io.BytesIO()
     buf = pack("<H", fibbase.wIdent)
     blob.write(buf)
-    
+
     buf = pack("<H", fibbase.nFib)
     blob.write(buf)
 
     buf = pack("<H", fibbase.unused)
     blob.write(buf)
-    
+
     buf = pack("<H", fibbase.lid)
     blob.write(buf)
 
     buf = pack("<H", fibbase.pnNext)
     blob.write(buf)
-    
+
     _buf = 0xffff
     _buf = setBit(_buf, 0, fibbase.fDot)
     _buf = setBit(_buf, 1, fibbase.fGlsy)
@@ -192,7 +194,7 @@ def _packFibBase(fibbase):
     _buf = setBit(_buf, 15, fibbase.fObfuscation)
     buf = pack("<H", _buf)
     blob.write(buf)
-    
+
     buf = pack("<H", fibbase.nFibBack)
     blob.write(buf)
 
@@ -201,7 +203,7 @@ def _packFibBase(fibbase):
 
     buf = pack("<B", fibbase.envr)
     blob.write(buf)
-    
+
     _buf = 0xff
     _buf = setBit(_buf, 0, fibbase.fMac)
     _buf = setBit(_buf, 1, fibbase.fEmptySpecial)
@@ -217,15 +219,16 @@ def _packFibBase(fibbase):
 
     buf = pack("<H", fibbase.reserved4)
     blob.write(buf)
-    
+
     buf = pack("<I", fibbase.reserved5)
     blob.write(buf)
 
     buf = pack("<I", fibbase.reserved6)
     blob.write(buf)
-    
+
     blob.seek(0)
     return blob
+
 
 def _parseFib(blob):
     Fib = namedtuple('Fib', ['base'])
@@ -233,6 +236,7 @@ def _parseFib(blob):
         base=_parseFibBase(blob)
     )
     return fib
+
 
 class Doc97File(base.BaseOfficeFile):
     def __init__(self, file):
@@ -242,33 +246,33 @@ class Doc97File(base.BaseOfficeFile):
         self.keyTypes = ['password']
         self.key = None
         self.salt = None
-        
-        ## https://msdn.microsoft.com/en-us/library/dd944620(v=office.12).aspx
+
+        # https://msdn.microsoft.com/en-us/library/dd944620(v=office.12).aspx
         fib = _parseFib(ole.openstream('wordDocument'))
-        
-        ## https://msdn.microsoft.com/en-us/library/dd923367(v=office.12).aspx
-        tablename = '1Table' if fib.base.fWhichTblStm == 1 else '0Table'      
-        
+
+        # https://msdn.microsoft.com/en-us/library/dd923367(v=office.12).aspx
+        tablename = '1Table' if fib.base.fWhichTblStm == 1 else '0Table'
+
         Info = namedtuple('Info', ['fib', 'tablename'])
         self.info = Info(
             fib=fib,
             tablename=tablename,
         )
-    
+
     def load_key(self, password=None):
         fib = self.info.fib
         logger.debug([fib.base.fEncrypted, fib.base.fObfuscation])
         if fib.base.fEncrypted == 1:
-            if fib.base.fObfuscation == 1: ## Using XOR obfuscation
+            if fib.base.fObfuscation == 1:  # Using XOR obfuscation
                 xor_obf_password_verifier = fib.base.IKey
                 logger.debug(hex(xor_obf_password_verifier))
-            else: # elif fib.base.fObfuscation == 0:
+            else:  # elif fib.base.fObfuscation == 0:
                 encryptionHeader_size = fib.base.IKey
                 logger.debug(hex(encryptionHeader_size))
                 table = self.ole.openstream(self.info.tablename)
                 encryptionHeader = table
-                ## RC4: https://msdn.microsoft.com/en-us/library/dd908560(v=office.12).aspx
-                ## TODO: RC4 CryptoAPI
+                # RC4: https://msdn.microsoft.com/en-us/library/dd908560(v=office.12).aspx
+                # TODO: RC4 CryptoAPI
                 encryptionVersionInfo = table.read(4)
                 salt = encryptionHeader.read(16)
                 encryptedVerifier = encryptionHeader.read(16)
@@ -279,18 +283,18 @@ class Doc97File(base.BaseOfficeFile):
                     self.salt = salt
                 else:
                     raise AssertionError()
-    
+
     def decrypt(self, ofile):
         # fd, _ofile_path = tempfile.mkstemp()
-        
+
         # shutil.copyfile(os.path.realpath(self.file.name), _ofile_path)
         # outole = olefile.OleFileIO(_ofile_path, write_mode=True)
-        
+
         _ofile = tempfile.TemporaryFile()
         self.file.seek(0)
         shutil.copyfileobj(self.file, _ofile)
         outole = olefile.OleFileIO(_ofile, write_mode=True)
-        
+
         obuf1 = io.BytesIO()
         fibbase = FibBase(
             wIdent=self.info.fib.base.wIdent,
@@ -326,15 +330,15 @@ class Doc97File(base.BaseOfficeFile):
             reserved6=self.info.fib.base.reserved6,
         )
         FIB_LENGTH = 0x44
-        
+
         header = _packFibBase(fibbase).read()
         logger.debug(len(header))
         obuf1.seek(0)
         obuf1.write(header)
-        
+
         worddocument = self.ole.openstream('wordDocument')
         worddocument.seek(len(header))
-        header = worddocument.read(FIB_LENGTH-len(header))
+        header = worddocument.read(FIB_LENGTH - len(header))
         worddocument.seek(0)
         logger.debug(len(header))
         obuf1.write(header)
@@ -343,19 +347,18 @@ class Doc97File(base.BaseOfficeFile):
         dec1.seek(FIB_LENGTH)
         obuf1.write(dec1.read())
         obuf1.seek(0)
-        
-        ## TODO: Preserve header
+
+        # TODO: Preserve header
         obuf2 = io.BytesIO()
         dec2 = DocumentRC4.decrypt(self.key, self.salt, self.ole.openstream(self.info.tablename))
         obuf2.write(dec2.read())
         obuf2.seek(0)
-        
+
         outole.write_stream('wordDocument', obuf1.read())
         outole.write_stream(self.info.tablename, obuf2.read())
-        
+
         # _ofile = open(_ofile_path, 'rb')
-        
+
         _ofile.seek(0)
-        
+
         shutil.copyfileobj(_ofile, ofile)
-        

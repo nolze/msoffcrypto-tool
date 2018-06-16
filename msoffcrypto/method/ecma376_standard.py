@@ -35,7 +35,7 @@ class ECMA376Standard:
     def verifykey(key, encryptedVerifier, encryptedVerifierHash):
         r'''
         Return True if the given intermediate key is valid.
-        
+
             >>> key = b'@\xb1:q\xf9\x0b\x96n7T\x08\xf2\xd1\x81\xa1\xaa'
             >>> encryptedVerifier = b'Qos.\x96o\xac\x17\xb1\xc5\xd7\xd8\xcc6\xc9('
             >>> encryptedVerifierHash = b'+ah\xda\xbe)\x11\xad+\xd3|\x17Ft\\\x14\xd3\xcf\x1b\xb1@\xa4\x8fNo=#\x88\x08r\xb1j'
@@ -58,7 +58,7 @@ class ECMA376Standard:
         logger.debug([password, hex(algId), hex(algIdHash), hex(providerType), keySize, saltSize, salt])
         r'''
         Generate intermediate key from given password.
-        
+
             >>> password = 'Password1234_'
             >>> algId = 0x660e
             >>> algIdHash = 0x8004
@@ -70,7 +70,7 @@ class ECMA376Standard:
             >>> ECMA376Agile.makekey_from_password(password, algId, algIdHash, providerType, keySize, saltSize, salt) == expected
             True
         '''
-        xor_bytes = lambda a, b: bytearray([p ^ q for p, q in zip(bytearray(a), bytearray(b))]) ## bytearray() for Python 2 compat.
+        xor_bytes = lambda a, b: bytearray([p ^ q for p, q in zip(bytearray(a), bytearray(b))])  # bytearray() for Python 2 compat.
 
         # https://msdn.microsoft.com/en-us/library/dd925430(v=office.12).aspx
         ITER_COUNT = 50000
