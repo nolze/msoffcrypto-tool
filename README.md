@@ -81,8 +81,8 @@ PRs welcome!
 * [x] Publish to PyPI
 * [ ] Add decryption tests for various file formats
 * [ ] Merge to more comprehensive projects handling MS Office files (such as [oletools](https://github.com/decalage2/oletools/)?) if possible
-* [ ] Support decrypting ecnrypted macros
-* [ ] Support decrypting ecnrypted Excel worksheets
+* [ ] Support decrypting encrypted macros
+* [ ] Support decrypting encrypted Excel worksheets
 * [ ] Support decrypting editing protection
 
 ## References
