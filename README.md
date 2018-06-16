@@ -17,13 +17,13 @@ pip install msoffcrypto-tool
 
 ## Examples
 
-### As a CLI tool (with password)
+### As CLI tool (with password)
 
 ```
 msoffcrypto-tool -p Passw0rd encrypted.docx decrypted.docx
 ```
 
-### As a library
+### As library
 
 Password and more key types are supported with library functions.
 
@@ -48,6 +48,7 @@ file.decrypt(open("decrypted.docx", "wb"))
 ### MS-OFFCRYPTO specs
 
 * [x] ECMA-376 (Agile Encryption)
+* [x] ECMA-376 (Standard Encryption)
   * [x] MS-DOCX (OOXML) (Word 2007-2016)
   * [x] MS-XLSX (OOXML) (Excel 2007-2016)
   * [x] MS-PPTX (OOXML) (PowerPoint 2007-2016)
@@ -55,7 +56,6 @@ file.decrypt(open("decrypted.docx", "wb"))
   * [x] MS-DOC (Word 97, 98, 2000)
   * [ ] MS-XLS (Excel 97, 98, 2000)
   * [ ] MS-PPT (PowerPoint 97, 98, 2000)
-* [ ] ECMA-376 (Standard Encryption)
 * [ ] ECMA-376 (Extensible Encryption)
 * [ ] Office Binary Document RC4 CryptoAPI
   * [ ] MS-DOC (Word 2002, 2003, 2004)
