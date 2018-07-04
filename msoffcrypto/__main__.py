@@ -1,5 +1,6 @@
 import logging, sys
 import argparse
+from __future__ import print_function
 
 import olefile
 
@@ -31,17 +32,17 @@ def main():
         try:
             file = OfficeFile(args.infile)
         except AssertionError:
-            print 0
+            print(0)
             return 0
         except IOError:
-            print 0
+            print(0)
             return 0
 
         if (file.keyTypes == ['password'] and not file.info.fib.base.fEncrypted):
-            print 0
+            print(0)
             return 0
         else:
-            print 1
+            print(1)
             return 1
     else:
         if not olefile.isOleFile(args.infile):
@@ -57,7 +58,7 @@ def main():
             # this will always raise an error for 2000-03 files, cannot be decrypted.
             # TODO: check and return output stating such, allowing safedocs to ignore file.
             except AssertionError:
-                print 1
+                print(1)
                 return 1
         else:
             raise AssertionError("Password is required")
@@ -71,10 +72,10 @@ def main():
 
         try:
             file.decrypt(args.outfile)
-            print 0
+            print(0)
             return 0
         except AssertionError:
-            print 1
+            print(1)
             return 1
 
 
