@@ -27,8 +27,6 @@ parser.add_argument('outfile', nargs='?', type=argparse.FileType('wb'), help='Ou
 def main():
   args = parser.parse_args()
 
-
-
   if args.protected:
     try:
       file = OfficeFile(args.infile)
@@ -38,7 +36,6 @@ def main():
     except IOError:
       print 0
       return 0
-
 
     if (file.keyTypes == ['password'] and not file.info.fib.base.fEncrypted):
       print 0
@@ -73,12 +70,13 @@ def main():
               args.outfile = sys.stdout
 
     try:
-      file.decrypt(args.outfile)
-      print 0
-      return 0
+         file.decrypt(args.outfile)
+         print 0
+         return 0
     except AssertionError:
-      print 1
-      return 1
+         print 1
+         return 1
+
 
 if __name__ == '__main__':
     main()
