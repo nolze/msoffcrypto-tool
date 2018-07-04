@@ -176,6 +176,9 @@ class OOXMLFile(base.BaseOfficeFile):
             obuf = ECMA376Standard.decrypt(self.secret_key, self.file.openstream('EncryptedPackage'))
             ofile.write(obuf)
 
+        if "[Content_Types].xml" not in obuf[:50]:
+            raise AssertionError("The file could not be decrypted with this password")
+
     # For backward compatibility; Should be removed in 4.0
     def load_password(self, password):
         self.load_key(password=password)
