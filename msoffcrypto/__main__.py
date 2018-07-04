@@ -25,57 +25,57 @@ parser.add_argument('outfile', nargs='?', type=argparse.FileType('wb'), help='Ou
 
 
 def main():
-  args = parser.parse_args()
+    args = parser.parse_args()
 
-  if args.protected:
-    try:
-      file = OfficeFile(args.infile)
-    except AssertionError:
-      print 0
-      return 0
-    except IOError:
-      print 0
-      return 0
-
-    if (file.keyTypes == ['password'] and not file.info.fib.base.fEncrypted):
-      print 0
-      return 0
-    else:
-      print 1
-      return 1
-  else:
-    if not olefile.isOleFile(args.infile):
-      raise AssertionError("No OLE file")
-    file = OfficeFile(args.infile)
-    if args.verbose:
-        logger.removeHandler(logging.NullHandler())
-        logging.basicConfig(level=logging.DEBUG, format="%(message)s")
-
-    if args.password:
+    if args.protected:
         try:
-          file.load_key(password=args.password)
-        # this will always raise an error for 2000-03 files, cannot be decrypted.
-        # TODO: check and return output stating such, allowing safedocs to ignore file.
+            file = OfficeFile(args.infile)
         except AssertionError:
-          print 1
-          return 1
-    else:
-        raise AssertionError("Password is required")
+            print 0
+            return 0
+        except IOError:
+            print 0
+            return 0
 
-    if args.outfile is None:
-        ifWIN32SetBinary(sys.stdout)
-        if hasattr(sys.stdout, 'buffer'):  # For Python 2
-              args.outfile = sys.stdout.buffer
+        if (file.keyTypes == ['password'] and not file.info.fib.base.fEncrypted):
+            print 0
+            return 0
         else:
-              args.outfile = sys.stdout
+            print 1
+            return 1
+    else:
+        if not olefile.isOleFile(args.infile):
+            raise AssertionError("No OLE file")
+        file = OfficeFile(args.infile)
+        if args.verbose:
+            logger.removeHandler(logging.NullHandler())
+            logging.basicConfig(level=logging.DEBUG, format="%(message)s")
 
-    try:
-         file.decrypt(args.outfile)
-         print 0
-         return 0
-    except AssertionError:
-         print 1
-         return 1
+        if args.password:
+            try:
+                file.load_key(password=args.password)
+            # this will always raise an error for 2000-03 files, cannot be decrypted.
+            # TODO: check and return output stating such, allowing safedocs to ignore file.
+            except AssertionError:
+                print 1
+                return 1
+        else:
+            raise AssertionError("Password is required")
+
+        if args.outfile is None:
+            ifWIN32SetBinary(sys.stdout)
+            if hasattr(sys.stdout, 'buffer'):  # For Python 2
+                args.outfile = sys.stdout.buffer
+            else:
+                args.outfile = sys.stdout
+
+        try:
+            file.decrypt(args.outfile)
+            print 0
+            return 0
+        except AssertionError:
+            print 1
+            return 1
 
 
 if __name__ == '__main__':
