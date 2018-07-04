@@ -1,6 +1,6 @@
+from __future__ import print_function
 import logging, sys
 import argparse
-from __future__ import print_function
 
 import olefile
 
