@@ -113,7 +113,8 @@ def _parseinfo(ole):
 
 class OOXMLFile(base.BaseOfficeFile):
     def __init__(self, file):
-        self.spec = "OOXML"
+        self.spec = "OOXML"  # TODO: Should be removed in 4.0
+        self.format = "ooxml"
         ole = olefile.OleFileIO(file)
         self.file = ole
         self.type, self.info = _parseinfo(self.file.openstream('EncryptionInfo'))
