@@ -16,6 +16,13 @@ def ifWIN32SetBinary(io):
         msvcrt.setmode(io.fileno(), os.O_BINARY)
 
 
+def is_encrypted(file):
+    if file.format == 'doc97' and not file.info.fib.base.fEncrypted:
+        return False
+    else:
+        return True
+
+
 parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument('-p', '--password', dest='password', help='Password text.')
@@ -38,7 +45,7 @@ def main():
     file = OfficeFile(args.infile)
 
     if args.protected:
-        if file.format == 'doc97' and not file.info.fib.base.fEncrypted:
+        if not is_encrypted(file):
             print("{}: not encrypted".format(args.infile.name), file=sys.stderr)
             sys.exit(1)
         else:
