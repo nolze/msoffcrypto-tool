@@ -282,7 +282,7 @@ class Doc97File(base.BaseOfficeFile):
                     self.key = password
                     self.salt = salt
                 else:
-                    raise AssertionError()
+                    raise AssertionError("Failed to verify password")
 
     def decrypt(self, ofile):
         # fd, _ofile_path = tempfile.mkstemp()
