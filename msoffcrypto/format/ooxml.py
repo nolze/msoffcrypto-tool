@@ -2,6 +2,7 @@ import logging
 import base64, io
 from struct import unpack
 from xml.dom.minidom import parseString
+import zipfile
 
 import olefile
 
@@ -177,8 +178,9 @@ class OOXMLFile(base.BaseOfficeFile):
             obuf = ECMA376Standard.decrypt(self.secret_key, self.file.openstream('EncryptedPackage'))
             ofile.write(obuf)
 
-        if "[Content_Types].xml" not in obuf[:50]:
-            raise AssertionError("The file could not be decrypted with this password")
+        # If the file is successfully decrypted, there must be a valid OOXML file, i.e. a valid zip file
+        if not zipfile.is_zipfile(io.BytesIO(obuf)):
+            raise Exception("The file could not be decrypted with this password")
 
     # For backward compatibility; Should be removed in 4.0
     def load_password(self, password):
