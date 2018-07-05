@@ -17,6 +17,14 @@ def ifWIN32SetBinary(io):
 
 
 def is_encrypted(file):
+    r'''
+    Test if the file is encrypted.
+
+        >>> f = open("tests/inputs/plain.doc", "rb")
+        >>> file = OfficeFile(f)
+        >>> is_encrypted(file)
+        False
+    '''
     if file.format == 'doc97' and not file.info.fib.base.fEncrypted:
         return False
     else:
