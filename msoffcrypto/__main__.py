@@ -28,16 +28,15 @@ parser.add_argument('outfile', nargs='?', type=argparse.FileType('wb'), help='Ou
 def main():
     args = parser.parse_args()
 
-    if args.protected:
-        try:
-            file = OfficeFile(args.infile)
-        except AssertionError:
-            print(0)
-            return 0
-        except IOError:
-            print(0)
-            return 0
+    if not olefile.isOleFile(args.infile):
+        raise AssertionError("No OLE file")
 
+    if args.verbose:
+        logger.removeHandler(logging.NullHandler())
+        logging.basicConfig(level=logging.DEBUG, format="%(message)s")
+
+    if args.protected:
+        file = OfficeFile(args.infile)
         if (file.keyTypes == ['password'] and not file.info.fib.base.fEncrypted):
             print(0)
             return 0
@@ -45,21 +44,12 @@ def main():
             print(1)
             return 1
     else:
-        if not olefile.isOleFile(args.infile):
-            raise AssertionError("No OLE file")
         file = OfficeFile(args.infile)
-        if args.verbose:
-            logger.removeHandler(logging.NullHandler())
-            logging.basicConfig(level=logging.DEBUG, format="%(message)s")
 
         if args.password:
-            try:
-                file.load_key(password=args.password)
             # this will always raise an error for 2000-03 files, cannot be decrypted.
             # TODO: check and return output stating such, allowing safedocs to ignore file.
-            except AssertionError:
-                print(1)
-                return 1
+            file.load_key(password=args.password)
         else:
             raise AssertionError("Password is required")
 
@@ -70,14 +60,7 @@ def main():
             else:
                 args.outfile = sys.stdout
 
-        try:
-            file.decrypt(args.outfile)
-            print(0)
-            return 0
-        except AssertionError:
-            print(1)
-            return 1
-
+        file.decrypt(args.outfile)
 
 if __name__ == '__main__':
     main()
