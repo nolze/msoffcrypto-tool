@@ -243,6 +243,7 @@ class Doc97File(base.BaseOfficeFile):
         self.file = file
         ole = olefile.OleFileIO(file)
         self.ole = ole
+        self.format = "doc97"
         self.keyTypes = ['password']
         self.key = None
         self.salt = None
