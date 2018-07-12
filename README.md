@@ -47,8 +47,7 @@ file.decrypt(open("decrypted.docx", "wb"))
 
 ### MS-OFFCRYPTO specs
 
-* [x] ECMA-376 (Agile Encryption)
-* [x] ECMA-376 (Standard Encryption)
+* [x] ECMA-376 (Agile Encryption/Standard Encryption)
   * [x] MS-DOCX (OOXML) (Word 2007-2016)
   * [x] MS-XLSX (OOXML) (Excel 2007-2016)
   * [x] MS-PPTX (OOXML) (PowerPoint 2007-2016)
