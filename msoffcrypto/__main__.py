@@ -25,6 +25,12 @@ def is_encrypted(file):
         >>> is_encrypted(file)
         False
     '''
+    # TODO: Validate file
+    if not olefile.isOleFile(file):
+        return False
+
+    file = OfficeFile(file)
+
     if file.format == 'doc97' and not file.info.fib.base.fEncrypted:
         return False
     else:
@@ -43,8 +49,16 @@ parser.add_argument('outfile', nargs='?', type=argparse.FileType('wb'), help='Ou
 def main():
     args = parser.parse_args()
 
+    if args.test_encrypted:
+        if not is_encrypted(args.infile):
+            print("{}: not encrypted".format(args.infile.name), file=sys.stderr)
+            sys.exit(1)
+        else:
+            logger.debug("{}: encrypted".format(args.infile.name))
+        return
+
     if not olefile.isOleFile(args.infile):
-        raise AssertionError("No OLE file")
+        raise AssertionError("Not OLE file")
 
     if args.verbose:
         logger.removeHandler(logging.NullHandler())
@@ -52,28 +66,21 @@ def main():
 
     file = OfficeFile(args.infile)
 
-    if args.test_encrypted:
-        if not is_encrypted(file):
-            print("{}: not encrypted".format(args.infile.name), file=sys.stderr)
-            sys.exit(1)
-        else:
-            logger.debug("{}: encrypted".format(args.infile.name))
+    if args.password:
+        # this will always raise an error for 2000-03 files, cannot be decrypted.
+        # TODO: check and return output stating such, allowing safedocs to ignore file.
+        file.load_key(password=args.password)
     else:
-        if args.password:
-            # this will always raise an error for 2000-03 files, cannot be decrypted.
-            # TODO: check and return output stating such, allowing safedocs to ignore file.
-            file.load_key(password=args.password)
+        raise AssertionError("Password is required")
+
+    if args.outfile is None:
+        ifWIN32SetBinary(sys.stdout)
+        if hasattr(sys.stdout, 'buffer'):  # For Python 2
+            args.outfile = sys.stdout.buffer
         else:
-            raise AssertionError("Password is required")
+            args.outfile = sys.stdout
 
-        if args.outfile is None:
-            ifWIN32SetBinary(sys.stdout)
-            if hasattr(sys.stdout, 'buffer'):  # For Python 2
-                args.outfile = sys.stdout.buffer
-            else:
-                args.outfile = sys.stdout
-
-        file.decrypt(args.outfile)
+    file.decrypt(args.outfile)
 
 if __name__ == '__main__':
     main()
