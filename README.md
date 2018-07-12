@@ -23,6 +23,12 @@ pip install msoffcrypto-tool
 msoffcrypto-tool -p Passw0rd encrypted.docx decrypted.docx
 ```
 
+Test if the file is encrypted or not:
+
+```
+msoffcrypto-tool -t document.doc
+```
+
 ### As library
 
 Password and more key types are supported with library functions.
