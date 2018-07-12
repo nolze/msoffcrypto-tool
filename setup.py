@@ -2,7 +2,7 @@ from setuptools import setup
 
 setup(
     name='msoffcrypto-tool',
-    version='4.3.0',
+    version='4.3.1',
     description='A Python tool and library for decrypting MS Office files with passwords or other keys',
     long_description=open("README.md", "r").read(),
     long_description_content_type='text/markdown',
