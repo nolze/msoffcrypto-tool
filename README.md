@@ -57,14 +57,14 @@ file.decrypt(open("decrypted.docx", "wb"))
   * [x] MS-DOCX (OOXML) (Word 2007-2016)
   * [x] MS-XLSX (OOXML) (Excel 2007-2016)
   * [x] MS-PPTX (OOXML) (PowerPoint 2007-2016)
-* [x] Office Binary Document RC4
-  * [x] MS-DOC (Word 97, 98, 2000)
-  * [ ] MS-XLS (Excel 97, 98, 2000)
-  * [ ] MS-PPT (PowerPoint 97, 98, 2000)
 * [x] Office Binary Document RC4 CryptoAPI
   * [x] MS-DOC (Word 2002, 2003, 2004)
   * [ ] MS-XLS (Excel 2002, 2003, 2004)
   * [ ] MS-PPT (PowerPoint 2002, 2003, 2004)
+* [x] Office Binary Document RC4
+  * [x] MS-DOC (Word 97, 98, 2000)
+  * [ ] MS-XLS (Excel 97, 98, 2000)
+  * [ ] MS-PPT (PowerPoint 97, 98, 2000)
 * [ ] ECMA-376 (Extensible Encryption)
 * [ ] XOR Obfuscation
 
