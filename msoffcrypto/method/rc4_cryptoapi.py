@@ -19,7 +19,7 @@ def _makekey(password, salt, keyLength, block, algIdHash=0x00008004):
     blockbytes = pack("<I", block)
     hfinal = sha1(h0 + blockbytes).digest()
     if keyLength == 40:  # TODO
-        pass
+        raise Exception("Not implemented")
     else:
         key = hfinal[:keyLength // 8]
     return key
@@ -46,7 +46,7 @@ class DocumentRC4CryptoAPI:
         return hash == verfiferHash
 
     @staticmethod
-    def decrypt(password, salt, keySize, ibuf):
+    def decrypt(password, salt, keySize, ibuf, blocksize=0x200):
         r'''
         Return decrypted data.
         '''
@@ -55,7 +55,7 @@ class DocumentRC4CryptoAPI:
         block = 0
         key = _makekey(password, salt, keySize, block)
 
-        for c, buf in enumerate(iter(functools.partial(ibuf.read, 0x200), b'')):
+        for c, buf in enumerate(iter(functools.partial(ibuf.read, blocksize), b'')):
             cipher = Cipher(algorithms.ARC4(key), mode=None, backend=default_backend())
             decryptor = cipher.decryptor()
 
