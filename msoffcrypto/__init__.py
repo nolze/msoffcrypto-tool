@@ -23,6 +23,11 @@ def OfficeFile(file):
     if ole.exists('wordDocument'):
         from .format.doc97 import Doc97File
         return Doc97File(file)
+    # MS-XLS: A file MUST contain exactly one Workbook Stream, ...
+    # https://msdn.microsoft.com/en-us/library/dd911009(v=office.12).aspx
+    elif ole.exists('Workbook'):
+        from .format.xls97 import Xls97File
+        return Xls97File(file)
     elif ole.exists('EncryptionInfo'):
         from .format.ooxml import OOXMLFile
         return OOXMLFile(file)
