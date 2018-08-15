@@ -61,7 +61,7 @@ class DocumentRC4:
         return hash == verfiferHash
 
     @staticmethod
-    def decrypt(password, salt, ibuf):
+    def decrypt(password, salt, ibuf, blocksize=0x200):
         r'''
         Return decrypted data.
         '''
@@ -70,7 +70,7 @@ class DocumentRC4:
         block = 0
         key = _makekey(password, salt, block)
 
-        for c, buf in enumerate(iter(functools.partial(ibuf.read, 0x200), b'')):
+        for c, buf in enumerate(iter(functools.partial(ibuf.read, blocksize), b'')):
             cipher = Cipher(algorithms.ARC4(key), mode=None, backend=default_backend())
             decryptor = cipher.decryptor()
 
