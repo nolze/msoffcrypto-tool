@@ -1,11 +1,13 @@
 import logging, io, shutil, tempfile
-from struct import pack, unpack_from
+from struct import pack, unpack, unpack_from
 from collections import namedtuple
 
 import olefile
 
 from . import base
+from .common import _parse_encryptionheader, _parse_encryptionverifier
 from ..method.rc4 import DocumentRC4
+from ..method.rc4_cryptoapi import DocumentRC4CryptoAPI
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -238,6 +240,38 @@ def _parseFib(blob):
     return fib
 
 
+def _parse_header_RC4(encryptionHeader):
+    # RC4: https://msdn.microsoft.com/en-us/library/dd908560(v=office.12).aspx
+    salt = encryptionHeader.read(16)
+    encryptedVerifier = encryptionHeader.read(16)
+    encryptedVerifierHash = encryptionHeader.read(16)
+    info = {
+        'salt': salt,
+        'encryptedVerifier': encryptedVerifier,
+        'encryptedVerifierHash': encryptedVerifierHash,
+    }
+    return info
+
+
+def _parse_header_RC4CryptoAPI(encryptionHeader):
+    flags = encryptionHeader.read(4)
+    headerSize, = unpack("<I", encryptionHeader.read(4))
+    logger.debug(headerSize)
+    blob = io.BytesIO(encryptionHeader.read(headerSize))
+    header = _parse_encryptionheader(blob)
+    logger.debug(header)
+    blob = io.BytesIO(encryptionHeader.read())
+    verifier = _parse_encryptionverifier(blob, "RC4")  # TODO: Fix (cf. ooxml.py)
+    logger.debug(verifier)
+    info = {
+        'salt': verifier['salt'],
+        'keySize': header['keySize'],
+        'encryptedVerifier': verifier['encryptedVerifier'],
+        'encryptedVerifierHash': verifier['encryptedVerifierHash'], 
+    }
+    return info
+
+
 class Doc97File(base.BaseOfficeFile):
     def __init__(self, file):
         self.file = file
@@ -272,18 +306,29 @@ class Doc97File(base.BaseOfficeFile):
                 logger.debug(hex(encryptionHeader_size))
                 table = self.ole.openstream(self.info.tablename)
                 encryptionHeader = table
-                # RC4: https://msdn.microsoft.com/en-us/library/dd908560(v=office.12).aspx
-                # TODO: RC4 CryptoAPI
                 encryptionVersionInfo = table.read(4)
-                salt = encryptionHeader.read(16)
-                encryptedVerifier = encryptionHeader.read(16)
-                encryptedVerifierHash = encryptionHeader.read(16)
-                logger.debug([encryptionVersionInfo, salt, encryptedVerifier, encryptedVerifierHash])
-                if DocumentRC4.verifypw(password, salt, encryptedVerifier, encryptedVerifierHash):
-                    self.key = password
-                    self.salt = salt
+                vMajor, vMinor = unpack("<HH", encryptionVersionInfo)
+                logger.debug("Version: {} {}".format(vMajor, vMinor))
+                if vMajor == 0x0001 and vMinor == 0x0001:  # RC4
+                    info = _parse_header_RC4(encryptionHeader)
+                    if DocumentRC4.verifypw(password, info['salt'], info['encryptedVerifier'], info['encryptedVerifierHash']):
+                        self.type = 'rc4'
+                        self.key = password
+                        self.salt = info['salt']
+                    else:
+                        raise AssertionError("Failed to verify password")
+                elif vMajor in [0x0002, 0x0003, 0x0004] and vMinor == 0x0002:  # RC4 CryptoAPI
+                    info = _parse_header_RC4CryptoAPI(encryptionHeader)
+                    if DocumentRC4CryptoAPI.verifypw(password, info['salt'], info['keySize'],
+                                                     info['encryptedVerifier'], info['encryptedVerifierHash']):
+                        self.type = 'rc4_cryptoapi'
+                        self.key = password
+                        self.salt = info['salt']
+                        self.keySize = info['keySize']
+                    else:
+                        raise AssertionError("Failed to verify password")
                 else:
-                    raise AssertionError("Failed to verify password")
+                    raise AssertionError("Unsupported encryption method")
 
     def decrypt(self, ofile):
         # fd, _ofile_path = tempfile.mkstemp()
@@ -344,14 +389,20 @@ class Doc97File(base.BaseOfficeFile):
         logger.debug(len(header))
         obuf1.write(header)
 
-        dec1 = DocumentRC4.decrypt(self.key, self.salt, worddocument)
+        if self.type == "rc4":
+            dec1 = DocumentRC4.decrypt(self.key, self.salt, worddocument)
+        elif self.type == "rc4_cryptoapi":
+            dec1 = DocumentRC4CryptoAPI.decrypt(self.key, self.salt, self.keySize, worddocument)
         dec1.seek(FIB_LENGTH)
         obuf1.write(dec1.read())
         obuf1.seek(0)
 
         # TODO: Preserve header
         obuf2 = io.BytesIO()
-        dec2 = DocumentRC4.decrypt(self.key, self.salt, self.ole.openstream(self.info.tablename))
+        if self.type == "rc4":
+            dec2 = DocumentRC4.decrypt(self.key, self.salt, self.ole.openstream(self.info.tablename))
+        elif self.type == "rc4_cryptoapi":
+            dec2 = DocumentRC4CryptoAPI.decrypt(self.key, self.salt, self.keySize, self.ole.openstream(self.info.tablename))
         obuf2.write(dec2.read())
         obuf2.seek(0)
 
