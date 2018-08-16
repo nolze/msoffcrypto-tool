@@ -31,10 +31,7 @@ def is_encrypted(file):
 
     file = OfficeFile(file)
 
-    if file.format == 'doc97' and not file.info.fib.base.fEncrypted:
-        return False
-    else:
-        return True
+    return file.is_encrypted()
 
 
 parser = argparse.ArgumentParser()
@@ -67,8 +64,6 @@ def main():
     file = OfficeFile(args.infile)
 
     if args.password:
-        # this will always raise an error for 2000-03 files, cannot be decrypted.
-        # TODO: check and return output stating such, allowing safedocs to ignore file.
         file.load_key(password=args.password)
     else:
         raise AssertionError("Password is required")

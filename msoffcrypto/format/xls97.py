@@ -438,7 +438,7 @@ class Xls97File(base.BaseOfficeFile):
         self.key = None
         self.salt = None
 
-        workbook = ole.openstream('Workbook')
+        workbook = _BIFFStream(ole.openstream('Workbook'))
 
         Data = namedtuple('Data', ['workbook'])
         self.data = Data(
@@ -446,7 +446,7 @@ class Xls97File(base.BaseOfficeFile):
         )
 
     def load_key(self, password=None):
-        workbook = _BIFFStream(self.data.workbook)
+        workbook = self.data.workbook
 
         # workbook stream consists of records, each of which begins with its ID number.
         # Record IDs (in decimal) are listed here: https://msdn.microsoft.com/en-us/library/dd945945(v=office.12).aspx
@@ -514,7 +514,7 @@ class Xls97File(base.BaseOfficeFile):
         # List of encrypted parts: https://msdn.microsoft.com/en-us/library/dd905723(v=office.12).aspx
 
         # Workbook stream
-        workbook = _BIFFStream(self.data.workbook)
+        workbook = self.data.workbook
 
         plain_buf = []
         encrypted_buf = io.BytesIO()
@@ -571,3 +571,21 @@ class Xls97File(base.BaseOfficeFile):
         shutil.copyfileobj(_ofile, ofile)
 
         return
+
+    def is_encrypted(self):
+        # Utilising the method above, check for encryption type.
+        workbook = self.data.workbook
+        num, = unpack("<H", workbook.data.read(2))
+        assert num == 2057
+        size, = unpack("<H", workbook.data.read(2))
+        workbook.data.read(size)
+        num, size = workbook.skip_to(47)
+        wEncryptionType, = unpack("<H", workbook.data.read(2))
+
+        if wEncryptionType == 0x0001:  # RC4
+            True
+        elif wEncryptionType == 0x0000:  # XOR obfuscation
+            # If not compatible no point stating that
+            raise AssertionError("Unsupported encryption method")
+        else:
+            False
