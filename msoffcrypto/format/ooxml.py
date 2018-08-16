@@ -139,6 +139,11 @@ class OOXMLFile(base.BaseOfficeFile):
         if not zipfile.is_zipfile(io.BytesIO(obuf)):
             raise Exception("The file could not be decrypted with this password")
 
+    def is_encrypted(self):
+        # olefile cannot process non password protected ooxml files.
+        # Hence if it has reached here it must be password protected.
+        return True
+
     # For backward compatibility; Should be removed in 4.0
     def load_password(self, password):
         self.load_key(password=password)
