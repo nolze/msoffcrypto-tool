@@ -446,6 +446,7 @@ class Xls97File(base.BaseOfficeFile):
         )
 
     def load_key(self, password=None):
+        self.data.workbook.seek(0)
         workbook = _BIFFStream(self.data.workbook)
 
         # workbook stream consists of records, each of which begins with its ID number.
@@ -473,8 +474,6 @@ class Xls97File(base.BaseOfficeFile):
             pass
 
         encryptionInfo = io.BytesIO(workbook.data.read(size-2))
-
-        workbook.data.seek(0)
 
         encryptionVersionInfo = encryptionInfo.read(4)
         vMajor, vMinor = unpack("<HH", encryptionVersionInfo)
@@ -514,6 +513,7 @@ class Xls97File(base.BaseOfficeFile):
         # List of encrypted parts: https://msdn.microsoft.com/en-us/library/dd905723(v=office.12).aspx
 
         # Workbook stream
+        self.data.workbook.seek(0)
         workbook = _BIFFStream(self.data.workbook)
 
         plain_buf = []
@@ -574,6 +574,7 @@ class Xls97File(base.BaseOfficeFile):
 
     def is_encrypted(self):
         # Utilising the method above, check for encryption type.
+        self.data.workbook.seek(0)
         workbook = _BIFFStream(self.data.workbook)
         num, = unpack("<H", workbook.data.read(2))
         assert num == 2057
