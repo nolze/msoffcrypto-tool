@@ -77,5 +77,6 @@ def main():
 
     file.decrypt(args.outfile)
 
+
 if __name__ == '__main__':
     main()

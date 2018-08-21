@@ -267,7 +267,7 @@ def _parse_header_RC4CryptoAPI(encryptionHeader):
         'salt': verifier['salt'],
         'keySize': header['keySize'],
         'encryptedVerifier': verifier['encryptedVerifier'],
-        'encryptedVerifierHash': verifier['encryptedVerifierHash'], 
+        'encryptedVerifierHash': verifier['encryptedVerifierHash'],
     }
     return info
 
