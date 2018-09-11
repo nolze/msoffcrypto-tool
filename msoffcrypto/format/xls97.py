@@ -407,11 +407,25 @@ class _BIFFStream:
     def __init__(self, data):
         self.data = data
 
+    def has_record(self, target):
+        pos = self.data.tell()
+        while True:
+            h = self.data.read(4)
+            if not h:
+                self.data.seek(pos)
+                return False
+            num, size = unpack("<HH", h)
+            if num == target:
+                self.data.seek(pos)
+                return True
+            else:
+                self.data.read(size)
+
     def skip_to(self, target):
         while True:
             h = self.data.read(4)
             if not h:
-                break
+                raise Exception("Record not found")
             num, size = unpack("<HH", h)
             if num == target:
                 return num, size
@@ -462,7 +476,7 @@ class Xls97File(base.BaseOfficeFile):
         size, = unpack("<H", workbook.data.read(2))
         workbook.data.read(size)  # Skip BOF
 
-        num, size = workbook.skip_to(47)  # Skip to FilePass
+        num, size = workbook.skip_to(47)  # Skip to FilePass; TODO: Raise exception if not encrypted
 
         # FilePass: https://msdn.microsoft.com/en-us/library/dd952596(v=office.12).aspx
         # If this record exists, the workbook MUST be encrypted.
@@ -576,17 +590,23 @@ class Xls97File(base.BaseOfficeFile):
         # Utilising the method above, check for encryption type.
         self.data.workbook.seek(0)
         workbook = _BIFFStream(self.data.workbook)
+
         num, = unpack("<H", workbook.data.read(2))
         assert num == 2057
+
         size, = unpack("<H", workbook.data.read(2))
         workbook.data.read(size)
+
+        if not workbook.has_record(47):
+            return False
+
         num, size = workbook.skip_to(47)
         wEncryptionType, = unpack("<H", workbook.data.read(2))
 
         if wEncryptionType == 0x0001:  # RC4
-            True
+            return True
         elif wEncryptionType == 0x0000:  # XOR obfuscation
             # If not compatible no point stating that
             raise AssertionError("Unsupported encryption method")
         else:
-            False
+            return False
