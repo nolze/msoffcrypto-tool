@@ -587,6 +587,18 @@ class Xls97File(base.BaseOfficeFile):
         return
 
     def is_encrypted(self):
+        r'''
+        Test if the file is encrypted.
+
+            >>> f = open("tests/inputs/plain.xls", "rb")
+            >>> file = Xls97File(f)
+            >>> file.is_encrypted()
+            False
+            >>> f = open("tests/inputs/rc4cryptoapi_password.xls", "rb")
+            >>> file = Xls97File(f)
+            >>> file.is_encrypted()
+            True
+        '''
         # Utilising the method above, check for encryption type.
         self.data.workbook.seek(0)
         workbook = _BIFFStream(self.data.workbook)
