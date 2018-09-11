@@ -476,7 +476,7 @@ class Xls97File(base.BaseOfficeFile):
         size, = unpack("<H", workbook.data.read(2))
         workbook.data.read(size)  # Skip BOF
 
-        num, size = workbook.skip_to(47)  # Skip to FilePass; TODO: Raise exception if not encrypted
+        num, size = workbook.skip_to(recordNameNum['FilePass'])  # Skip to FilePass; TODO: Raise exception if not encrypted
 
         # FilePass: https://msdn.microsoft.com/en-us/library/dd952596(v=office.12).aspx
         # If this record exists, the workbook MUST be encrypted.
@@ -597,10 +597,10 @@ class Xls97File(base.BaseOfficeFile):
         size, = unpack("<H", workbook.data.read(2))
         workbook.data.read(size)
 
-        if not workbook.has_record(47):
+        if not workbook.has_record(recordNameNum['FilePass']):
             return False
 
-        num, size = workbook.skip_to(47)
+        num, size = workbook.skip_to(recordNameNum['FilePass'])
         wEncryptionType, = unpack("<H", workbook.data.read(2))
 
         if wEncryptionType == 0x0001:  # RC4
