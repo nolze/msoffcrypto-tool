@@ -46,6 +46,10 @@ parser.add_argument('outfile', nargs='?', type=argparse.FileType('wb'), help='Ou
 def main():
     args = parser.parse_args()
 
+    if args.verbose:
+        logger.removeHandler(logging.NullHandler())
+        logging.basicConfig(level=logging.DEBUG, format="%(message)s")
+
     if args.test_encrypted:
         if not is_encrypted(args.infile):
             print("{}: not encrypted".format(args.infile.name), file=sys.stderr)
@@ -56,10 +60,6 @@ def main():
 
     if not olefile.isOleFile(args.infile):
         raise AssertionError("Not OLE file")
-
-    if args.verbose:
-        logger.removeHandler(logging.NullHandler())
-        logging.basicConfig(level=logging.DEBUG, format="%(message)s")
 
     file = OfficeFile(args.infile)
 
