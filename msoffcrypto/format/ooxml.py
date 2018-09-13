@@ -76,6 +76,7 @@ class OOXMLFile(base.BaseOfficeFile):
         ole = olefile.OleFileIO(file)
         self.file = ole
         self.type, self.info = _parseinfo(self.file.openstream('EncryptionInfo'))
+        logger.debug("OOXMLFile.type: {}".format(self.type))
         self.secret_key = None
         if self.type == 'agile':
             # TODO: Support aliases?

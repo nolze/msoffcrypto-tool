@@ -296,14 +296,15 @@ class Doc97File(base.BaseOfficeFile):
 
     def load_key(self, password=None):
         fib = self.info.fib
-        logger.debug([fib.base.fEncrypted, fib.base.fObfuscation])
+        logger.debug("fEncrypted: {}, fObfuscation: {}".format(fib.base.fEncrypted, fib.base.fObfuscation))
+
         if fib.base.fEncrypted == 1:
             if fib.base.fObfuscation == 1:  # Using XOR obfuscation
                 xor_obf_password_verifier = fib.base.IKey
                 logger.debug(hex(xor_obf_password_verifier))
             else:  # elif fib.base.fObfuscation == 0:
                 encryptionHeader_size = fib.base.IKey
-                logger.debug(hex(encryptionHeader_size))
+                logger.debug("encryptionHeader_size: {}".format(hex(encryptionHeader_size)))
                 table = self.ole.openstream(self.info.tablename)
                 encryptionHeader = table
                 encryptionVersionInfo = table.read(4)
