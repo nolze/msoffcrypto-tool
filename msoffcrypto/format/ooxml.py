@@ -66,7 +66,7 @@ def _parseinfo(ole):
     elif versionMajor in [2, 3, 4] and versionMinor == 2:  # Standard
         return 'standard', _parseinfo_standard(ole)
     elif versionMajor in [3, 4] and versionMinor == 3:  # Extensible
-        raise AssertionError("Unsupported EncryptionInfo version (Extensible Encryption)")
+        raise Exception("Unsupported EncryptionInfo version (Extensible Encryption)")
 
 
 class OOXMLFile(base.BaseOfficeFile):
@@ -113,14 +113,14 @@ class OOXMLFile(base.BaseOfficeFile):
                     self.info['verifier']['encryptedVerifierHash']
                 )
                 if not verified:
-                    raise AssertionError()
+                    raise Exception("Key verification failed")
             elif self.type == 'extensible':
                 pass
         elif private_key:
             if self.type == 'agile':
                 self.secret_key = ECMA376Agile.makekey_from_privkey(private_key, self.info['encryptedKeyValue'])
             else:
-                raise AssertionError("Unsupported key type for the encryption method")
+                raise Exception("Unsupported key type for the encryption method")
         elif secret_key:
             self.secret_key = secret_key
 

@@ -59,14 +59,14 @@ def main():
         return
 
     if not olefile.isOleFile(args.infile):
-        raise AssertionError("Not OLE file")
+        raise Exception("Not OLE file")
 
     file = OfficeFile(args.infile)
 
     if args.password:
         file.load_key(password=args.password)
     else:
-        raise AssertionError("Password is required")
+        raise Exception("Password is required")
 
     if args.outfile is None:
         ifWIN32SetBinary(sys.stdout)

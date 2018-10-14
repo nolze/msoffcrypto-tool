@@ -317,7 +317,7 @@ class Doc97File(base.BaseOfficeFile):
                         self.key = password
                         self.salt = info['salt']
                     else:
-                        raise AssertionError("Failed to verify password")
+                        raise Exception("Failed to verify password")
                 elif vMajor in [0x0002, 0x0003, 0x0004] and vMinor == 0x0002:  # RC4 CryptoAPI
                     info = _parse_header_RC4CryptoAPI(encryptionHeader)
                     if DocumentRC4CryptoAPI.verifypw(password, info['salt'], info['keySize'],
@@ -327,9 +327,9 @@ class Doc97File(base.BaseOfficeFile):
                         self.salt = info['salt']
                         self.keySize = info['keySize']
                     else:
-                        raise AssertionError("Failed to verify password")
+                        raise Exception("Failed to verify password")
                 else:
-                    raise AssertionError("Unsupported encryption method")
+                    raise Exception("Unsupported encryption method")
 
     def decrypt(self, ofile):
         # fd, _ofile_path = tempfile.mkstemp()
