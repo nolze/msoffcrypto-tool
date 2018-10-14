@@ -34,4 +34,4 @@ def OfficeFile(file):
         from .format.xls97 import Xls97File
         return Xls97File(file)
     else:
-        raise AssertionError("Unrecognized file format")
+        raise Exception("Unrecognized file format")

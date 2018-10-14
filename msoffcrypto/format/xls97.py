@@ -483,7 +483,7 @@ class Xls97File(base.BaseOfficeFile):
         wEncryptionType, = unpack("<H", workbook.data.read(2))
 
         if wEncryptionType == 0x0000:  # XOR obfuscation
-            raise AssertionError("Unsupported encryption method")
+            raise Exception("Unsupported encryption method")
         elif wEncryptionType == 0x0001:  # RC4
             pass
 
@@ -499,7 +499,7 @@ class Xls97File(base.BaseOfficeFile):
                 self.key = password
                 self.salt = info['salt']
             else:
-                raise AssertionError("Failed to verify password")
+                raise Exception("Failed to verify password")
         elif vMajor in [0x0002, 0x0003, 0x0004] and vMinor == 0x0002:  # RC4 CryptoAPI
             info = _parse_header_RC4CryptoAPI(encryptionInfo)
             if DocumentRC4CryptoAPI.verifypw(password, info['salt'], info['keySize'],
@@ -509,9 +509,9 @@ class Xls97File(base.BaseOfficeFile):
                 self.salt = info['salt']
                 self.keySize = info['keySize']
             else:
-                raise AssertionError("Failed to verify password")
+                raise Exception("Failed to verify password")
         else:
-            raise AssertionError("Unsupported encryption method")
+            raise Exception("Unsupported encryption method")
 
     def decrypt(self, ofile):
         # fd, _ofile_path = tempfile.mkstemp()
@@ -619,6 +619,6 @@ class Xls97File(base.BaseOfficeFile):
             return True
         elif wEncryptionType == 0x0000:  # XOR obfuscation
             # If not compatible no point stating that
-            raise AssertionError("Unsupported encryption method")
+            raise Exception("Unsupported encryption method")
         else:
             return False
