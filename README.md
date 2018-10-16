@@ -23,10 +23,10 @@ pip install msoffcrypto-tool
 msoffcrypto-tool -p Passw0rd encrypted.docx decrypted.docx
 ```
 
-Test if the file is encrypted or not:
+Test if the file is encrypted or not (exit code 0 or 1 is returned):
 
 ```
-msoffcrypto-tool -t document.doc
+msoffcrypto-tool --test -v document.doc
 ```
 
 ### As library
