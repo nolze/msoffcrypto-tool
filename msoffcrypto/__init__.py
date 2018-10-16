@@ -1,6 +1,9 @@
 import olefile
 
 
+__version__ = "4.6.3"
+
+
 def OfficeFile(file):
     '''Return an office file object based on the format of given file.
 
