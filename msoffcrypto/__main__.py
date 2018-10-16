@@ -4,6 +4,7 @@ import argparse
 
 import olefile
 
+from . import __version__
 from . import OfficeFile
 
 logger = logging.getLogger(__name__)
@@ -49,6 +50,7 @@ def main():
     if args.verbose:
         logger.removeHandler(logging.NullHandler())
         logging.basicConfig(level=logging.DEBUG, format="%(message)s")
+        logger.debug("Version: {}".format(__version__))
 
     if args.test_encrypted:
         if not is_encrypted(args.infile):
