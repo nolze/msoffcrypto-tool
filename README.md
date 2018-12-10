@@ -89,6 +89,7 @@ PRs welcome!
 * [ ] Support decrypting encrypted macros
 * [ ] Support decrypting encrypted Excel worksheets
 * [ ] Support decrypting editing protection
+* [ ] Support encryption
 
 ## References
 
