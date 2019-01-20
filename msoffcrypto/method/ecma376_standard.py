@@ -55,7 +55,6 @@ class ECMA376Standard:
 
     @staticmethod
     def makekey_from_password(password, algId, algIdHash, providerType, keySize, saltSize, salt):
-        logger.debug([password, hex(algId), hex(algIdHash), hex(providerType), keySize, saltSize, salt])
         r'''
         Generate intermediate key from given password.
 
@@ -67,9 +66,10 @@ class ECMA376Standard:
             >>> saltSize = 16
             >>> salt = b'\xe8\x82fI\x0c[\xd1\xee\xbd+C\x94\xe3\xf80\xef'
             >>> expected = b'@\xb1:q\xf9\x0b\x96n7T\x08\xf2\xd1\x81\xa1\xaa'
-            >>> ECMA376Agile.makekey_from_password(password, algId, algIdHash, providerType, keySize, saltSize, salt) == expected
+            >>> ECMA376Standard.makekey_from_password(password, algId, algIdHash, providerType, keySize, saltSize, salt) == expected
             True
         '''
+        logger.debug([password, hex(algId), hex(algIdHash), hex(providerType), keySize, saltSize, salt])
         xor_bytes = lambda a, b: bytearray([p ^ q for p, q in zip(bytearray(a), bytearray(b))])  # bytearray() for Python 2 compat.
 
         # https://msdn.microsoft.com/en-us/library/dd925430(v=office.12).aspx
