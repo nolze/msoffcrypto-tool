@@ -407,8 +407,20 @@ class Doc97File(base.BaseOfficeFile):
         obuf2.write(dec2.read())
         obuf2.seek(0)
 
+        obuf3 = None
+        if self.ole.exists('Data'):
+            obuf3 = io.BytesIO()
+            if self.type == "rc4":
+                dec3 = DocumentRC4.decrypt(self.key, self.salt, self.ole.openstream('Data'))
+            elif self.type == "rc4_cryptoapi":
+                dec3 = DocumentRC4CryptoAPI.decrypt(self.key, self.salt, self.keySize, self.ole.openstream('Data'))
+            obuf3.write(dec3.read())
+            obuf3.seek(0)
+
         outole.write_stream('wordDocument', obuf1.read())
         outole.write_stream(self.info.tablename, obuf2.read())
+        if obuf3:
+            outole.write_stream('Data', obuf3.read())
 
         # _ofile = open(_ofile_path, 'rb')
 
