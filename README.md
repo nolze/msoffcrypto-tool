@@ -110,3 +110,5 @@ PRs welcome!
 
 * <https://github.com/jbremer/sflock/commit/3f6a96abe1dbb4405e4fb7fd0d16863f634b09fb>
 * <https://github.com/dtjohnson/xlsx-populate>
+* <https://github.com/shombo/cyberstakes-writeps-2018/tree/master/word_up>
+* <https://isc.sans.edu/forums/diary/Video+Analyzing+Encrypted+Malicious+Office+Documents/24572/>
