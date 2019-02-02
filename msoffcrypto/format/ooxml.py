@@ -71,7 +71,6 @@ def _parseinfo(ole):
 
 class OOXMLFile(base.BaseOfficeFile):
     def __init__(self, file):
-        self.spec = "OOXML"  # TODO: Should be removed in 4.0
         self.format = "ooxml"
         ole = olefile.OleFileIO(file)
         self.file = ole
@@ -144,13 +143,3 @@ class OOXMLFile(base.BaseOfficeFile):
         # olefile cannot process non password protected ooxml files.
         # Hence if it has reached here it must be password protected.
         return True
-
-    # For backward compatibility; Should be removed in 4.0
-    def load_password(self, password):
-        self.load_key(password=password)
-
-    def load_privkey(self, privkey):
-        self.load_key(private_key=privkey)
-
-    def load_skey(self, skey):
-        self.load_key(secret_key=skey)
