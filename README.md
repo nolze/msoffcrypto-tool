@@ -8,7 +8,15 @@
 
 msoffcrypto-tool (formerly ms-offcrypto-tool) is a Python tool and library for decrypting encrypted MS Office files with password, intermediate key, or private key which generated its escrow key.
 
-Early PoC version: <https://github.com/nolze/ms-offcrypto-tool/tree/v0.1.0> 
+## Contents
+
+* [Install](#install)
+* [Examples](#examples)
+* [Supported encryption methods](#supported-encryption-methods)
+* [Todo](#todo)
+* [References](#references)
+* [Use cases and mentions](#use-cases-and-mentions)
+* [Contributors](#contributors)
 
 ## Install
 
@@ -112,3 +120,7 @@ PRs welcome!
 * <https://github.com/dtjohnson/xlsx-populate>
 * <https://github.com/shombo/cyberstakes-writeps-2018/tree/master/word_up>
 * <https://isc.sans.edu/forums/diary/Video+Analyzing+Encrypted+Malicious+Office+Documents/24572/>
+
+## Contributors
+
+* <https://github.com/nolze/msoffcrypto-tool/graphs/contributors>
