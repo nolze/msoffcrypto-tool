@@ -61,11 +61,10 @@ file.decrypt(open("decrypted.docx", "wb"))
 * [x] Office Binary Document RC4 CryptoAPI
   * [x] MS-DOC (Word 2002, 2003, 2004)
   * [x] MS-XLS (Excel 2002, 2003, 2004) (experimental)
-  * [ ] MS-PPT (PowerPoint 2002, 2003, 2004)
+  * [x] MS-PPT (PowerPoint 2002, 2003, 2004) (partial, experimental)
 * [x] Office Binary Document RC4
   * [x] MS-DOC (Word 97, 98, 2000)
   * [x] MS-XLS (Excel 97, 98, 2000) (experimental)
-  * [ ] MS-PPT (PowerPoint 97, 98, 2000)
 * [ ] ECMA-376 (Extensible Encryption)
 * [ ] XOR Obfuscation
 
