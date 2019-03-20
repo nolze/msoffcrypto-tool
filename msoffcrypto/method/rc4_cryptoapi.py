@@ -30,12 +30,11 @@ class DocumentRC4CryptoAPI:
         pass
 
     @staticmethod
-    def verifypw(password, salt, keySize, encryptedVerifier, encryptedVerifierHash, algId=0x00006801):
+    def verifypw(password, salt, keySize, encryptedVerifier, encryptedVerifierHash, algId=0x00006801, block=0):
         r'''
         Return True if the given password is valid.
         '''
         # https://msdn.microsoft.com/en-us/library/dd953617(v=office.12).aspx
-        block = 0
         key = _makekey(password, salt, keySize, block)
         cipher = Cipher(algorithms.ARC4(key), mode=None, backend=default_backend())
         decryptor = cipher.decryptor()
@@ -46,13 +45,12 @@ class DocumentRC4CryptoAPI:
         return hash == verfiferHash
 
     @staticmethod
-    def decrypt(password, salt, keySize, ibuf, blocksize=0x200):
+    def decrypt(password, salt, keySize, ibuf, blocksize=0x200, block=0):
         r'''
         Return decrypted data.
         '''
         obuf = io.BytesIO()
 
-        block = 0
         key = _makekey(password, salt, keySize, block)
 
         for c, buf in enumerate(iter(functools.partial(ibuf.read, blocksize), b'')):
