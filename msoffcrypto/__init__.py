@@ -36,5 +36,10 @@ def OfficeFile(file):
     elif ole.exists('Workbook'):
         from .format.xls97 import Xls97File
         return Xls97File(file)
+    # MS-PPT: A required stream whose name MUST be "PowerPoint Document".
+    # https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-ppt/1fc22d56-28f9-4818-bd45-67c2bf721ccf
+    elif ole.exists('PowerPoint Document'):
+        from .format.ppt97 import Ppt97File
+        return Ppt97File(file)
     else:
         raise Exception("Unrecognized file format")
