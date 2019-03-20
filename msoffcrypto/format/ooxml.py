@@ -72,6 +72,7 @@ def _parseinfo(ole):
 class OOXMLFile(base.BaseOfficeFile):
     def __init__(self, file):
         self.format = "ooxml"
+        file.seek(0)  # TODO: Investigate the effect (required for olefile.isOleFile)
         # olefile cannot process non password protected ooxml files.
         if olefile.isOleFile(file):
             ole = olefile.OleFileIO(file)
