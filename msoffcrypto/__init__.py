@@ -1,7 +1,7 @@
 import olefile
 
 
-__version__ = "4.6.4"
+__version__ = "4.7.0"
 
 
 def OfficeFile(file):
