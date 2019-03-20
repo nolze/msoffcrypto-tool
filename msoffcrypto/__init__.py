@@ -1,4 +1,5 @@
 import olefile
+import zipfile
 
 
 __version__ = "4.7.0"
@@ -19,7 +20,13 @@ def OfficeFile(file):
         >>> officefile.keyTypes
         ('password', 'private_key', 'secret_key')
     '''
-    ole = olefile.OleFileIO(file)
+    if olefile.isOleFile(file):
+        ole = olefile.OleFileIO(file)
+    elif zipfile.is_zipfile(file):  # Heuristic
+        from .format.ooxml import OOXMLFile
+        return OOXMLFile(file)
+    else:
+        raise Exception("Unsupported file format")
 
     # TODO: Make format specifiable by option in case of obstruction
     # Try this first; see https://github.com/nolze/msoffcrypto-tool/issues/17

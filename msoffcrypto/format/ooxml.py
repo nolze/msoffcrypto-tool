@@ -72,18 +72,26 @@ def _parseinfo(ole):
 class OOXMLFile(base.BaseOfficeFile):
     def __init__(self, file):
         self.format = "ooxml"
-        ole = olefile.OleFileIO(file)
-        self.file = ole
-        self.type, self.info = _parseinfo(self.file.openstream('EncryptionInfo'))
-        logger.debug("OOXMLFile.type: {}".format(self.type))
-        self.secret_key = None
-        if self.type == 'agile':
-            # TODO: Support aliases?
-            self.keyTypes = ('password', 'private_key', 'secret_key')
-        elif self.type == 'standard':
-            self.keyTypes = ('password', 'secret_key')
-        elif self.type == 'extensible':
-            pass
+        # olefile cannot process non password protected ooxml files.
+        if olefile.isOleFile(file):
+            ole = olefile.OleFileIO(file)
+            self.file = ole
+            self.type, self.info = _parseinfo(self.file.openstream('EncryptionInfo'))
+            logger.debug("OOXMLFile.type: {}".format(self.type))
+            self.secret_key = None
+            if self.type == 'agile':
+                # TODO: Support aliases?
+                self.keyTypes = ('password', 'private_key', 'secret_key')
+            elif self.type == 'standard':
+                self.keyTypes = ('password', 'secret_key')
+            elif self.type == 'extensible':
+                pass
+        elif zipfile.is_zipfile(file):
+            self.file = file
+            self.type, self.info = None, None
+            self.secret_key = None
+        else:
+            raise Exception("Unsupported file format")
 
     def load_key(self, password=None, private_key=None, secret_key=None, strict=False):
         if password:
@@ -140,6 +148,8 @@ class OOXMLFile(base.BaseOfficeFile):
             raise Exception("The file could not be decrypted with this password")
 
     def is_encrypted(self):
-        # olefile cannot process non password protected ooxml files.
-        # Hence if it has reached here it must be password protected.
-        return True
+        # Heuristic
+        if isinstance(self.file, olefile.OleFileIO):
+            return True
+        else:
+            return False
