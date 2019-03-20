@@ -11,3 +11,5 @@ msoffcrypto-tool -p Password1234_ inputs/rc4cryptoapi_password.doc /tmp/rc4crypt
 diff /tmp/rc4cryptoapi_password_plain.doc outputs/rc4cryptoapi_password_plain.doc
 msoffcrypto-tool -p Password1234_ inputs/rc4cryptoapi_password.xls /tmp/rc4cryptoapi_password_plain.xls
 diff /tmp/rc4cryptoapi_password_plain.xls outputs/rc4cryptoapi_password_plain.xls
+msoffcrypto-tool -p Password1234_ inputs/rc4cryptoapi_password.ppt /tmp/rc4cryptoapi_password_plain.ppt
+diff /tmp/rc4cryptoapi_password_plain.ppt outputs/rc4cryptoapi_password_plain.ppt
