@@ -84,6 +84,18 @@ file.decrypt(open("decrypted.docx", "wb"))
 
 PRs welcome!
 
+## Tests
+
+Tests can be run in various ways:
+* python -m nose
+* nosetest
+* python -m unittest discover
+* python setup.py test
+* run script tests/tests.sh
+
+If cryptography is not installed, tests are skipped. If you have dependencies installed only for a
+certain python version, replace "python" with "pythonX.Y" in the above commands.
+
 ## Todo
 
 * [x] Add tests
