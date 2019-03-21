@@ -19,7 +19,7 @@ def find_version(*file_paths):
     raise RuntimeError("Unable to find version string.")
 
 setup(
-    name='msoffcrypto-tool',
+    name='msoffcrypto',
     version=find_version("msoffcrypto", "__init__.py"),
     description='A Python tool and library for decrypting MS Office files with passwords or other keys',
     long_description=open("README.md", "r").read(),
