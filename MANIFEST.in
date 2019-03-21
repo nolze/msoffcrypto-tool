@@ -1,0 +1,7 @@
+include README.md
+
+# include test source and data files
+include tests/tests.sh
+recursive-include tests *.py
+graft tests/inputs
+graft tests/outputs
