@@ -20,7 +20,7 @@ sys.path.insert(0, os.path.abspath('../'))
 # -- Project information -----------------------------------------------------
 
 project = 'msoffcrypto-tool'
-copyright = '2018, nolze'
+copyright = '2015, nolze'
 author = 'nolze'
 
 # The short X.Y version

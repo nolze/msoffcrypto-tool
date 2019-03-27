@@ -12,6 +12,14 @@ msoffcrypto.format.base module
     :undoc-members:
     :show-inheritance:
 
+msoffcrypto.format.common module
+--------------------------------
+
+.. automodule:: msoffcrypto.format.common
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 msoffcrypto.format.doc97 module
 -------------------------------
 
@@ -24,6 +32,22 @@ msoffcrypto.format.ooxml module
 -------------------------------
 
 .. automodule:: msoffcrypto.format.ooxml
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+msoffcrypto.format.ppt97 module
+-------------------------------
+
+.. automodule:: msoffcrypto.format.ppt97
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+msoffcrypto.format.xls97 module
+-------------------------------
+
+.. automodule:: msoffcrypto.format.xls97
     :members:
     :undoc-members:
     :show-inheritance:
