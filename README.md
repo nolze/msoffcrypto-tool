@@ -107,6 +107,7 @@ If the [cryptography](https://pypi.org/project/cryptography/) package is not ins
 * [x] Publish to PyPI
 * [ ] Add decryption tests for various file formats
 * [ ] Merge to more comprehensive projects handling MS Office files (such as [oletools](https://github.com/decalage2/oletools/)?) if possible
+* [ ] Use `ctypes.Structure`
 * [ ] Support decrypting encrypted macros
 * [ ] Support decrypting encrypted Excel worksheets
 * [ ] Support decrypting editing protection
@@ -121,6 +122,7 @@ If the [cryptography](https://pypi.org/project/cryptography/) package is not ins
 * LibreOffice/mso-dumper <https://github.com/LibreOffice/mso-dumper>
 * wvDecrypt <http://www.skynet.ie/~caolan/Packages/wvDecrypt.html>
 * Microsoft Office password protection - Wikipedia <https://en.wikipedia.org/wiki/Microsoft_Office_password_protection#History_of_Microsoft_Encryption_password>
+* office2john.py <https://github.com/magnumripper/JohnTheRipper/blob/bleeding-jumbo/run/office2john.py>
 
 ## Alternatives
 
