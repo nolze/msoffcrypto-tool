@@ -38,7 +38,7 @@ setup(
         'olefile >= 0.45',
         'cryptography >= 2.3',
     ],
-    test_require=[
+    tests_require=[
         'nose >= 1.3.7',
         'coverage >= 4.5.1', 
     ],
