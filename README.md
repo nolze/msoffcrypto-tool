@@ -13,6 +13,7 @@ msoffcrypto-tool (formerly ms-offcrypto-tool) is a Python tool and library for d
 * [Install](#install)
 * [Examples](#examples)
 * [Supported encryption methods](#supported-encryption-methods)
+* [Tests](#tests)
 * [Todo](#todo)
 * [References](#references)
 * [Use cases and mentions](#use-cases-and-mentions)
@@ -87,14 +88,14 @@ PRs welcome!
 ## Tests
 
 Tests can be run in various ways:
-* python -m nose
-* nosetest
-* python -m unittest discover
-* python setup.py test
-* run script tests/test_cli.sh
 
-If cryptography is not installed, tests are skipped. If you have dependencies installed only for a
-certain python version, replace "python" with "pythonX.Y" in the above commands.
+* `python -m nose -c .noserc`
+* `nosetests -c .noserc`
+* `python -m unittest discover`
+* `python setup.py test`
+* `./tests/test_cli.sh`
+
+If the [cryptography](https://pypi.org/project/cryptography/) package is not installed, tests are skipped. If you have dependencies installed only for a certain python version, replace "python" with "pythonX.Y" in the above commands.
 
 ## Todo
 
