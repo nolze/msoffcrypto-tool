@@ -91,7 +91,7 @@ Tests can be run in various ways:
 * nosetest
 * python -m unittest discover
 * python setup.py test
-* run script tests/tests.sh
+* run script tests/test_cli.sh
 
 If cryptography is not installed, tests are skipped. If you have dependencies installed only for a
 certain python version, replace "python" with "pythonX.Y" in the above commands.

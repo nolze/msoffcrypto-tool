@@ -2,7 +2,7 @@ include README.md
 include .noserc
 
 # include test source and data files
-include tests/tests.sh
+include tests/test_cli.sh
 recursive-include tests *.py
 graft tests/inputs
 graft tests/outputs
