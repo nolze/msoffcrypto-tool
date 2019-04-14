@@ -107,7 +107,7 @@ If the [cryptography](https://pypi.org/project/cryptography/) package is not ins
 * [x] Publish to PyPI
 * [x] Add decryption tests for various file formats
 * [x] Integrate with more comprehensive projects handling MS Office files (such as [oletools](https://github.com/decalage2/oletools/)?) if possible
-* [ ] Add the password prompt mode for CLI
+* [x] Add the password prompt mode for CLI
 * [ ] Redesign APIs (v5.0.0)
 * [ ] Improve error types (v5.0.0)
 * [ ] Use `ctypes.Structure`
