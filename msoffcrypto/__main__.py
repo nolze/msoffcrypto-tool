@@ -1,6 +1,7 @@
 from __future__ import print_function
 import logging, sys
 import argparse
+import getpass
 
 import olefile
 
@@ -37,7 +38,7 @@ def is_encrypted(file):
 
 parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group(required=True)
-group.add_argument('-p', '--password', dest='password', help='Password text.')
+group.add_argument('-p', '--password', nargs='?', const='', dest='password', help='Password text.')
 group.add_argument('-t', '--test', dest='test_encrypted', action='store_true', help='Test if the file is encrypted.')
 parser.add_argument('-v', dest='verbose', action='store_true', help='Print verbose information.')
 parser.add_argument('infile', nargs='?', type=argparse.FileType('rb'), help='Input file.')
@@ -68,7 +69,8 @@ def main():
     if args.password:
         file.load_key(password=args.password)
     else:
-        raise Exception("Password is required")
+        password = getpass.getpass()
+        file.load_key(password=password)
 
     if args.outfile is None:
         ifWIN32SetBinary(sys.stdout)
