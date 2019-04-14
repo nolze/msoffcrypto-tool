@@ -40,7 +40,7 @@ setup(
     ],
     tests_require=[
         'nose >= 1.3.7',
-        'coverage >= 4.5.1', 
+        'coverage >= 4.5.1',
     ],
     classifiers=[
     ],
