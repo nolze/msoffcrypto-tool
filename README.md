@@ -105,15 +105,15 @@ If the [cryptography](https://pypi.org/project/cryptography/) package is not ins
 * [x] Add function-level tests
 * [x] Add API documents
 * [x] Publish to PyPI
-* [ ] Add decryption tests for various file formats
-* [ ] Merge to more comprehensive projects handling MS Office files (such as [oletools](https://github.com/decalage2/oletools/)?) if possible
+* [x] Add decryption tests for various file formats
+* [x] Integrate with more comprehensive projects handling MS Office files (such as [oletools](https://github.com/decalage2/oletools/)?) if possible
+* [ ] Add the password prompt mode for CLI
+* [ ] Redesign APIs (v5.0.0)
+* [ ] Improve error types (v5.0.0)
 * [ ] Use `ctypes.Structure`
-* [ ] Support decrypting encrypted macros
-* [ ] Support decrypting encrypted Excel worksheets
-* [ ] Support decrypting editing protection
 * [ ] Support encryption
 
-## References
+## See also
 
 * "Backdooring MS Office documents with secret master keys" <http://secuinside.com/archive/2015/2015-1-9.pdf>
 * Technical Documents <https://msdn.microsoft.com/en-us/library/cc313105.aspx>
