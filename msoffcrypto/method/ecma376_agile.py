@@ -1,5 +1,7 @@
 import logging
-import hashlib, functools, io
+import hashlib
+import functools
+import io
 from struct import pack, unpack
 
 from cryptography.hazmat.backends import default_backend

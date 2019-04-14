@@ -1,4 +1,7 @@
-import logging, io, shutil, tempfile
+import logging
+import io
+import shutil
+import tempfile
 from struct import pack, unpack
 from collections import namedtuple
 

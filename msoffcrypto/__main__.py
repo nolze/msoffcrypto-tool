@@ -1,5 +1,6 @@
 from __future__ import print_function
-import logging, sys
+import logging
+import sys
 import argparse
 import getpass
 
@@ -14,7 +15,8 @@ logger.addHandler(logging.NullHandler())
 
 def ifWIN32SetBinary(io):
     if sys.platform == 'win32':
-        import msvcrt, os
+        import msvcrt
+        import os
         msvcrt.setmode(io.fileno(), os.O_BINARY)
 
 
