@@ -30,13 +30,20 @@ pip install msoffcrypto-tool
 ### As CLI tool (with password)
 
 ```
-msoffcrypto-tool -p Passw0rd encrypted.docx decrypted.docx
+msoffcrypto-tool encrypted.docx decrypted.docx -p Passw0rd
+```
+
+Password is prompted if omit the password argument value:
+
+```bash
+$ msoffcrypto-tool encrypted.docx decrypted.docx -p
+Password:
 ```
 
 Test if the file is encrypted or not (exit code 0 or 1 is returned):
 
 ```
-msoffcrypto-tool --test -v document.doc
+msoffcrypto-tool document.doc --test -v
 ```
 
 ### As library
