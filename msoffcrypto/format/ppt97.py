@@ -471,7 +471,7 @@ def construct_persistobjectdirectory(data):
 
 
 def _parse_header_RC4CryptoAPI(encryptionInfo):
-    flags = encryptionInfo.read(4)
+    encryptionInfo.read(4)
     headerSize, = unpack("<I", encryptionInfo.read(4))
     logger.debug(headerSize)
     blob = io.BytesIO(encryptionInfo.read(headerSize))
