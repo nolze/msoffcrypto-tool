@@ -254,7 +254,7 @@ def _parse_header_RC4(encryptionHeader):
 
 
 def _parse_header_RC4CryptoAPI(encryptionHeader):
-    flags = encryptionHeader.read(4)
+    encryptionHeader.read(4)
     headerSize, = unpack("<I", encryptionHeader.read(4))
     logger.debug(headerSize)
     blob = io.BytesIO(encryptionHeader.read(headerSize))
