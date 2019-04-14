@@ -1,4 +1,6 @@
-import functools, io, logging
+import functools
+import io
+import logging
 from hashlib import md5
 from struct import pack
 
