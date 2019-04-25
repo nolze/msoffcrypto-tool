@@ -312,7 +312,7 @@ class Doc97File(base.BaseOfficeFile):
                 encryptionHeader_size = fib.base.IKey
                 logger.debug("encryptionHeader_size: {}".format(hex(encryptionHeader_size)))
                 with self.ole.openstream(self.info.tablename) as table:
-                    encryptionHeader = table
+                    encryptionHeader = table          # TODO why create a 2nd reference to same stream?
                     encryptionVersionInfo = table.read(4)
                     vMajor, vMinor = unpack("<HH", encryptionVersionInfo)
                     logger.debug("Version: {} {}".format(vMajor, vMinor))

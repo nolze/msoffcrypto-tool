@@ -75,6 +75,7 @@ class OOXMLFile(base.BaseOfficeFile):
         file.seek(0)  # TODO: Investigate the effect (required for olefile.isOleFile)
         self.close_file_in_destructor = False
         # olefile cannot process non password protected ooxml files.
+        # TODO: this code is duplicate of OfficeFile(). Merge?
         if olefile.isOleFile(file):
             ole = olefile.OleFileIO(file)
             self.file = ole
