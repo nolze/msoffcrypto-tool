@@ -73,11 +73,14 @@ class OOXMLFile(base.BaseOfficeFile):
     def __init__(self, file):
         self.format = "ooxml"
         file.seek(0)  # TODO: Investigate the effect (required for olefile.isOleFile)
+        self.close_file_in_destructor = False
         # olefile cannot process non password protected ooxml files.
         if olefile.isOleFile(file):
             ole = olefile.OleFileIO(file)
             self.file = ole
-            self.type, self.info = _parseinfo(self.file.openstream('EncryptionInfo'))
+            self.close_file_in_destructor = True
+            with self.file.openstream('EncryptionInfo') as stream:
+                self.type, self.info = _parseinfo(stream)
             logger.debug("OOXMLFile.type: {}".format(self.type))
             self.secret_key = None
             if self.type == 'agile':
@@ -93,6 +96,10 @@ class OOXMLFile(base.BaseOfficeFile):
             self.secret_key = None
         else:
             raise Exception("Unsupported file format")
+
+    def __del__(self):
+        if self.close_file_in_destructor and self.file:
+            self.file.close()
 
     def load_key(self, password=None, private_key=None, secret_key=None, strict=False):
         if password:
@@ -134,14 +141,16 @@ class OOXMLFile(base.BaseOfficeFile):
 
     def decrypt(self, ofile):
         if self.type == 'agile':
-            obuf = ECMA376Agile.decrypt(
-                self.secret_key, self.info['keyDataSalt'],
-                self.info['keyDataHashAlgorithm'],
-                self.file.openstream('EncryptedPackage')
-            )
+            with self.file.openstream('EncryptedPackage') as stream:
+                obuf = ECMA376Agile.decrypt(
+                    self.secret_key, self.info['keyDataSalt'],
+                    self.info['keyDataHashAlgorithm'],
+                    stream
+                )
             ofile.write(obuf)
         elif self.type == 'standard':
-            obuf = ECMA376Standard.decrypt(self.secret_key, self.file.openstream('EncryptedPackage'))
+            with self.file.openstream('EncryptedPackage') as stream:
+                obuf = ECMA376Standard.decrypt(self.secret_key, stream)
             ofile.write(obuf)
 
         # If the file is successfully decrypted, there must be a valid OOXML file, i.e. a valid zip file

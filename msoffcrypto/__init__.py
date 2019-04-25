@@ -15,10 +15,15 @@ def OfficeFile(file):
         BaseOfficeFile object.
 
     Examples:
+        >>> # would be better but doctest cannot handle it:
+        >>> # with open(...) as f:
+        >>> #     officefile = OfficeFile(f)
+        >>> #     ...
         >>> f = open("tests/inputs/example_password.docx", "rb")
         >>> officefile = OfficeFile(f)
         >>> officefile.keyTypes
         ('password', 'private_key', 'secret_key')
+        >>> f.close()
     '''
     if olefile.isOleFile(file):
         ole = olefile.OleFileIO(file)
