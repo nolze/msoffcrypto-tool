@@ -526,70 +526,70 @@ class Xls97File(base.BaseOfficeFile):
         # shutil.copyfile(os.path.realpath(self.file.name), _ofile_path)
         # outole = olefile.OleFileIO(_ofile_path, write_mode=True)
 
-        _ofile = tempfile.TemporaryFile()
-        self.file.seek(0)
-        shutil.copyfileobj(self.file, _ofile)
-        outole = olefile.OleFileIO(_ofile, write_mode=True)
+        with tempfile.TemporaryFile() as _ofile:
+            self.file.seek(0)
+            shutil.copyfileobj(self.file, _ofile)
+            outole = olefile.OleFileIO(_ofile, write_mode=True)
 
-        # List of encrypted parts: https://msdn.microsoft.com/en-us/library/dd905723(v=office.12).aspx
+            # List of encrypted parts: https://msdn.microsoft.com/en-us/library/dd905723(v=office.12).aspx
 
-        # Workbook stream
-        self.data.workbook.seek(0)
-        workbook = _BIFFStream(self.data.workbook)
+            # Workbook stream
+            self.data.workbook.seek(0)
+            workbook = _BIFFStream(self.data.workbook)
 
-        plain_buf = []
-        encrypted_buf = io.BytesIO()
+            plain_buf = []
+            encrypted_buf = io.BytesIO()
 
-        for i, (num, size, record) in enumerate(workbook.iter_record()):
-            # Remove encryption, pad by zero to preserve stream size
-            if num == recordNameNum['FilePass']:
-                plain_buf += [0, 0] + list(pack("<H", size)) + [0] * size
-                encrypted_buf.write(b"\x00"*(4+size))
-            # The following records MUST NOT be obfuscated or encrypted: BOF (section 2.4.21),
-            # FilePass (section 2.4.117), UsrExcl (section 2.4.339), FileLock (section 2.4.116),
-            # InterfaceHdr (section 2.4.146), RRDInfo (section 2.4.227), and RRDHead (section 2.4.226).
-            elif num in [recordNameNum['BOF'], recordNameNum['FilePass'], recordNameNum['UsrExcl'],
-                         recordNameNum['FileLock'], recordNameNum['InterfaceHdr'], recordNameNum['RRDInfo'],
-                         recordNameNum['RRDHead']]:
-                header = pack("<HH", num, size)
-                plain_buf += list(header) + list(record.read())
-                encrypted_buf.write(b"\x00"*(4+size))
-            # The lbPlyPos field of the BoundSheet8 record (section 2.4.28) MUST NOT be encrypted.
-            elif num == recordNameNum['BoundSheet8']:
-                header = pack("<HH", num, size)
-                plain_buf += list(header) + list(record.read(4)) + [-1] * (size-4)  # Preserve lbPlyPos
-                encrypted_buf.write(b"\x00"*4 + b"\x00"*4 + record.read())
-            else:
-                header = pack("<HH", num, size)
-                plain_buf += list(header) + [-1] * size
-                encrypted_buf.write(b"\x00"*4 + record.read())
+            for i, (num, size, record) in enumerate(workbook.iter_record()):
+                # Remove encryption, pad by zero to preserve stream size
+                if num == recordNameNum['FilePass']:
+                    plain_buf += [0, 0] + list(pack("<H", size)) + [0] * size
+                    encrypted_buf.write(b"\x00"*(4+size))
+                # The following records MUST NOT be obfuscated or encrypted: BOF (section 2.4.21),
+                # FilePass (section 2.4.117), UsrExcl (section 2.4.339), FileLock (section 2.4.116),
+                # InterfaceHdr (section 2.4.146), RRDInfo (section 2.4.227), and RRDHead (section 2.4.226).
+                elif num in [recordNameNum['BOF'], recordNameNum['FilePass'], recordNameNum['UsrExcl'],
+                             recordNameNum['FileLock'], recordNameNum['InterfaceHdr'], recordNameNum['RRDInfo'],
+                             recordNameNum['RRDHead']]:
+                    header = pack("<HH", num, size)
+                    plain_buf += list(header) + list(record.read())
+                    encrypted_buf.write(b"\x00"*(4+size))
+                # The lbPlyPos field of the BoundSheet8 record (section 2.4.28) MUST NOT be encrypted.
+                elif num == recordNameNum['BoundSheet8']:
+                    header = pack("<HH", num, size)
+                    plain_buf += list(header) + list(record.read(4)) + [-1] * (size-4)  # Preserve lbPlyPos
+                    encrypted_buf.write(b"\x00"*4 + b"\x00"*4 + record.read())
+                else:
+                    header = pack("<HH", num, size)
+                    plain_buf += list(header) + [-1] * size
+                    encrypted_buf.write(b"\x00"*4 + record.read())
 
-        encrypted_buf.seek(0)
+            encrypted_buf.seek(0)
 
-        if self.type == "rc4":
-            dec = DocumentRC4.decrypt(self.key, self.salt, encrypted_buf, blocksize=1024)
-        elif self.type == "rc4_cryptoapi":
-            dec = DocumentRC4CryptoAPI.decrypt(self.key, self.salt, self.keySize, encrypted_buf, blocksize=1024)
+            if self.type == "rc4":
+                dec = DocumentRC4.decrypt(self.key, self.salt, encrypted_buf, blocksize=1024)
+            elif self.type == "rc4_cryptoapi":
+                dec = DocumentRC4CryptoAPI.decrypt(self.key, self.salt, self.keySize, encrypted_buf, blocksize=1024)
 
-        for c in plain_buf:
-            if c == -1:
-                dec.seek(1, 1)
-            else:
-                dec.write(bytearray([c]))
+            for c in plain_buf:
+                if c == -1:
+                    dec.seek(1, 1)
+                else:
+                    dec.write(bytearray([c]))
 
-        dec.seek(0)
+            dec.seek(0)
 
-        # f = open('Workbook', 'wb')
-        # f.write(dec.read())
-        # dec.seek(0)
+            # f = open('Workbook', 'wb')
+            # f.write(dec.read())
+            # dec.seek(0)
 
-        outole.write_stream('Workbook', dec.read())
+            outole.write_stream('Workbook', dec.read())
 
-        # _ofile = open(_ofile_path, 'rb')
+            # _ofile = open(_ofile_path, 'rb')
 
-        _ofile.seek(0)
+            _ofile.seek(0)
 
-        shutil.copyfileobj(_ofile, ofile)
+            shutil.copyfileobj(_ofile, ofile)
 
         return
 

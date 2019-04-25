@@ -343,100 +343,100 @@ class Doc97File(base.BaseOfficeFile):
         # shutil.copyfile(os.path.realpath(self.file.name), _ofile_path)
         # outole = olefile.OleFileIO(_ofile_path, write_mode=True)
 
-        _ofile = tempfile.TemporaryFile()
-        self.file.seek(0)
-        shutil.copyfileobj(self.file, _ofile)
-        outole = olefile.OleFileIO(_ofile, write_mode=True)
+        with tempfile.TemporaryFile() as _ofile:
+            self.file.seek(0)
+            shutil.copyfileobj(self.file, _ofile)
+            outole = olefile.OleFileIO(_ofile, write_mode=True)
 
-        obuf1 = io.BytesIO()
-        fibbase = FibBase(
-            wIdent=self.info.fib.base.wIdent,
-            nFib=self.info.fib.base.nFib,
-            unused=self.info.fib.base.unused,
-            lid=self.info.fib.base.lid,
-            pnNext=self.info.fib.base.pnNext,
-            fDot=self.info.fib.base.fDot,
-            fGlsy=self.info.fib.base.fGlsy,
-            fComplex=self.info.fib.base.fComplex,
-            fHasPic=self.info.fib.base.fHasPic,
-            cQuickSaves=self.info.fib.base.cQuickSaves,
-            fEncrypted=0,
-            fWhichTblStm=self.info.fib.base.fWhichTblStm,
-            fReadOnlyRecommended=self.info.fib.base.fReadOnlyRecommended,
-            fWriteReservation=self.info.fib.base.fWriteReservation,
-            fExtChar=self.info.fib.base.fExtChar,
-            fLoadOverride=self.info.fib.base.fLoadOverride,
-            fFarEast=self.info.fib.base.fFarEast,
-            nFibBack=self.info.fib.base.nFibBack,
-            fObfuscation=0,
-            IKey=0,
-            envr=self.info.fib.base.envr,
-            fMac=self.info.fib.base.fMac,
-            fEmptySpecial=self.info.fib.base.fEmptySpecial,
-            fLoadOverridePage=self.info.fib.base.fLoadOverridePage,
-            reserved1=self.info.fib.base.reserved1,
-            reserved2=self.info.fib.base.reserved2,
-            fSpare0=self.info.fib.base.fSpare0,
-            reserved3=self.info.fib.base.reserved3,
-            reserved4=self.info.fib.base.reserved4,
-            reserved5=self.info.fib.base.reserved5,
-            reserved6=self.info.fib.base.reserved6,
-        )
-        FIB_LENGTH = 0x44
+            obuf1 = io.BytesIO()
+            fibbase = FibBase(
+                wIdent=self.info.fib.base.wIdent,
+                nFib=self.info.fib.base.nFib,
+                unused=self.info.fib.base.unused,
+                lid=self.info.fib.base.lid,
+                pnNext=self.info.fib.base.pnNext,
+                fDot=self.info.fib.base.fDot,
+                fGlsy=self.info.fib.base.fGlsy,
+                fComplex=self.info.fib.base.fComplex,
+                fHasPic=self.info.fib.base.fHasPic,
+                cQuickSaves=self.info.fib.base.cQuickSaves,
+                fEncrypted=0,
+                fWhichTblStm=self.info.fib.base.fWhichTblStm,
+                fReadOnlyRecommended=self.info.fib.base.fReadOnlyRecommended,
+                fWriteReservation=self.info.fib.base.fWriteReservation,
+                fExtChar=self.info.fib.base.fExtChar,
+                fLoadOverride=self.info.fib.base.fLoadOverride,
+                fFarEast=self.info.fib.base.fFarEast,
+                nFibBack=self.info.fib.base.nFibBack,
+                fObfuscation=0,
+                IKey=0,
+                envr=self.info.fib.base.envr,
+                fMac=self.info.fib.base.fMac,
+                fEmptySpecial=self.info.fib.base.fEmptySpecial,
+                fLoadOverridePage=self.info.fib.base.fLoadOverridePage,
+                reserved1=self.info.fib.base.reserved1,
+                reserved2=self.info.fib.base.reserved2,
+                fSpare0=self.info.fib.base.fSpare0,
+                reserved3=self.info.fib.base.reserved3,
+                reserved4=self.info.fib.base.reserved4,
+                reserved5=self.info.fib.base.reserved5,
+                reserved6=self.info.fib.base.reserved6,
+            )
+            FIB_LENGTH = 0x44
 
-        header = _packFibBase(fibbase).read()
-        logger.debug(len(header))
-        obuf1.seek(0)
-        obuf1.write(header)
-
-        with self.ole.openstream('wordDocument') as worddocument:
-            worddocument.seek(len(header))
-            header = worddocument.read(FIB_LENGTH - len(header))
-            worddocument.seek(0)
+            header = _packFibBase(fibbase).read()
             logger.debug(len(header))
+            obuf1.seek(0)
             obuf1.write(header)
 
+            with self.ole.openstream('wordDocument') as worddocument:
+                worddocument.seek(len(header))
+                header = worddocument.read(FIB_LENGTH - len(header))
+                worddocument.seek(0)
+                logger.debug(len(header))
+                obuf1.write(header)
+
+                if self.type == "rc4":
+                    dec1 = DocumentRC4.decrypt(self.key, self.salt, worddocument)
+                elif self.type == "rc4_cryptoapi":
+                    dec1 = DocumentRC4CryptoAPI.decrypt(self.key, self.salt, self.keySize, worddocument)
+                dec1.seek(FIB_LENGTH)
+                obuf1.write(dec1.read())
+                obuf1.seek(0)
+
+            # TODO: Preserve header
+            obuf2 = io.BytesIO()
             if self.type == "rc4":
-                dec1 = DocumentRC4.decrypt(self.key, self.salt, worddocument)
+                with self.ole.openstream(self.info.tablename) as stream:
+                    dec2 = DocumentRC4.decrypt(self.key, self.salt, stream)
             elif self.type == "rc4_cryptoapi":
-                dec1 = DocumentRC4CryptoAPI.decrypt(self.key, self.salt, self.keySize, worddocument)
-            dec1.seek(FIB_LENGTH)
-            obuf1.write(dec1.read())
-            obuf1.seek(0)
+                with self.ole.openstream(self.info.tablename) as stream:
+                    dec2 = DocumentRC4CryptoAPI.decrypt(self.key, self.salt, self.keySize, stream)
+            obuf2.write(dec2.read())
+            obuf2.seek(0)
 
-        # TODO: Preserve header
-        obuf2 = io.BytesIO()
-        if self.type == "rc4":
-            with self.ole.openstream(self.info.tablename) as stream:
-                dec2 = DocumentRC4.decrypt(self.key, self.salt, stream)
-        elif self.type == "rc4_cryptoapi":
-            with self.ole.openstream(self.info.tablename) as stream:
-                dec2 = DocumentRC4CryptoAPI.decrypt(self.key, self.salt, self.keySize, stream)
-        obuf2.write(dec2.read())
-        obuf2.seek(0)
+            obuf3 = None
+            if self.ole.exists('Data'):
+                obuf3 = io.BytesIO()
+                if self.type == "rc4":
+                    with self.ole.openstream('Data') as data_stream:
+                        dec3 = DocumentRC4.decrypt(self.key, self.salt, data_stream)
+                elif self.type == "rc4_cryptoapi":
+                    with self.ole.openstream('Data') as data_stream:
+                        dec3 = DocumentRC4CryptoAPI.decrypt(self.key, self.salt, self.keySize, data_stream)
+                obuf3.write(dec3.read())
+                obuf3.seek(0)
 
-        obuf3 = None
-        if self.ole.exists('Data'):
-            obuf3 = io.BytesIO()
-            if self.type == "rc4":
-                with self.ole.openstream('Data') as data_stream:
-                    dec3 = DocumentRC4.decrypt(self.key, self.salt, data_stream)
-            elif self.type == "rc4_cryptoapi":
-                with self.ole.openstream('Data') as data_stream:
-                    dec3 = DocumentRC4CryptoAPI.decrypt(self.key, self.salt, self.keySize, data_stream)
-            obuf3.write(dec3.read())
-            obuf3.seek(0)
+            outole.write_stream('wordDocument', obuf1.read())
+            outole.write_stream(self.info.tablename, obuf2.read())
+            if obuf3:
+                outole.write_stream('Data', obuf3.read())
 
-        outole.write_stream('wordDocument', obuf1.read())
-        outole.write_stream(self.info.tablename, obuf2.read())
-        if obuf3:
-            outole.write_stream('Data', obuf3.read())
+            # _ofile = open(_ofile_path, 'rb')
 
-        # _ofile = open(_ofile_path, 'rb')
+            _ofile.seek(0)
 
-        _ofile.seek(0)
-
-        shutil.copyfileobj(_ofile, ofile)
+            shutil.copyfileobj(_ofile, ofile)
 
     def is_encrypted(self):
         return self.info.fib.base.fEncrypted
