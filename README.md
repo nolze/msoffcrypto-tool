@@ -33,7 +33,7 @@ pip install msoffcrypto-tool
 msoffcrypto-tool encrypted.docx decrypted.docx -p Passw0rd
 ```
 
-Password is prompted if omit the password argument value:
+Password is prompted if you omit the password argument value:
 
 ```bash
 $ msoffcrypto-tool encrypted.docx decrypted.docx -p
