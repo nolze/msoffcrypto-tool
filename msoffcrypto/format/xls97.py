@@ -544,8 +544,8 @@ class Xls97File(base.BaseOfficeFile):
             # FilePass (section 2.4.117), UsrExcl (section 2.4.339), FileLock (section 2.4.116),
             # InterfaceHdr (section 2.4.146), RRDInfo (section 2.4.227), and RRDHead (section 2.4.226).
             elif num in [recordNameNum['BOF'], recordNameNum['FilePass'], recordNameNum['UsrExcl'],
-                            recordNameNum['FileLock'], recordNameNum['InterfaceHdr'], recordNameNum['RRDInfo'],
-                            recordNameNum['RRDHead']]:
+                         recordNameNum['FileLock'], recordNameNum['InterfaceHdr'], recordNameNum['RRDInfo'],
+                         recordNameNum['RRDHead']]:
                 header = pack("<HH", num, size)
                 plain_buf += list(header) + list(record.read())
                 encrypted_buf.write(b"\x00"*(4+size))
