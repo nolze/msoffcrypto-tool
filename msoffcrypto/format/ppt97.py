@@ -558,175 +558,178 @@ class Ppt97File(base.BaseOfficeFile):
             raise Exception("Failed to verify password")
 
     def decrypt(self, ofile):
+        # Current User Stream
+        self.data.currentuser.seek(0)
+        currentuser = _parseCurrentUser(self.data.currentuser)
+        # logger.debug(currentuser)
+
+        cuatom = currentuser.currentuseratom
+
+        currentuser_new = CurrentUser(
+            currentuseratom=CurrentUserAtom(
+                rh=cuatom.rh,
+                size=cuatom.size,
+                # https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-ppt/940d5700-e4d7-4fc0-ab48-fed5dbc48bc1
+                # 0xE391C05F: The file SHOULD NOT<6> be an encrypted document.
+                headerToken=0xe391c05f,
+                offsetToCurrentEdit=cuatom.offsetToCurrentEdit,
+                lenUserName=cuatom.lenUserName,
+                docFileVersion=cuatom.docFileVersion,
+                majorVersion=cuatom.majorVersion,
+                minorVersion=cuatom.minorVersion,
+                unused=cuatom.unused,
+                ansiUserName=cuatom.ansiUserName,
+                relVersion=cuatom.relVersion,
+                unicodeUserName=cuatom.unicodeUserName,
+            )
+        )
+
+        buf = _packCurrentUser(currentuser_new)
+        buf.seek(0)
+        currentuser_buf = buf
+
+        # List of encrypted parts: https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-ppt/b0963334-4408-4621-879a-ef9c54551fd8
+
+        # PowerPoint Document Stream
+
+        self.data.powerpointdocument.seek(0)
+        powerpointdocument_size = len(self.data.powerpointdocument.read())
+        logger.debug("[*] powerpointdocument_size: {}".format(powerpointdocument_size))
+
+        self.data.powerpointdocument.seek(0)
+        dec_bytearray = bytearray(self.data.powerpointdocument.read())
+
+        # UserEditAtom
+        self.data.powerpointdocument.seek(currentuser.currentuseratom.offsetToCurrentEdit)
+        # currentuseratom_raw = self.data.powerpointdocument.read(40)
+
+        self.data.powerpointdocument.seek(currentuser.currentuseratom.offsetToCurrentEdit)
+        usereditatom = _parseUserEditAtom(self.data.powerpointdocument)
+        # logger.debug(usereditatom)
+        # logger.debug(["offsetToCurrentEdit", currentuser.currentuseratom.offsetToCurrentEdit])
+
+        rh_new = RecordHeader(
+            recVer=usereditatom.rh.recVer,
+            recInstance=usereditatom.rh.recInstance,
+            recType=usereditatom.rh.recType,
+            recLen=usereditatom.rh.recLen - 4,  # Omit encryptSessionPersistIdRef field
+        )
+
+        # logger.debug([_packRecordHeader(usereditatom.rh).read(), _packRecordHeader(rh_new).read()])
+
+        usereditatom_new = UserEditAtom(
+            rh=rh_new,
+            lastSlideIdRef=usereditatom.lastSlideIdRef,
+            version=usereditatom.version,
+            minorVersion=usereditatom.minorVersion,
+            majorVersion=usereditatom.majorVersion,
+            offsetLastEdit=usereditatom.offsetLastEdit,
+            offsetPersistDirectory=usereditatom.offsetPersistDirectory,
+            docPersistIdRef=usereditatom.docPersistIdRef,
+            persistIdSeed=usereditatom.persistIdSeed,
+            lastView=usereditatom.lastView,
+            unused=usereditatom.unused,
+            encryptSessionPersistIdRef=0x00000000,  # Clear
+        )
+
+        # logger.debug(currentuseratom_raw)
+        # logger.debug(_packUserEditAtom(usereditatom).read())
+        # logger.debug(_packUserEditAtom(usereditatom_new).read())
+
+        buf = _packUserEditAtom(usereditatom_new)
+        buf.seek(0)
+        buf_bytes = bytearray(buf.read())
+        offset = currentuser.currentuseratom.offsetToCurrentEdit
+        dec_bytearray[offset:offset+len(buf_bytes)] = buf_bytes
+
+        # PersistDirectoryAtom
+        self.data.powerpointdocument.seek(currentuser.currentuseratom.offsetToCurrentEdit)
+        usereditatom = _parseUserEditAtom(self.data.powerpointdocument)
+        # logger.debug(usereditatom)
+
+        self.data.powerpointdocument.seek(usereditatom.offsetPersistDirectory)
+        persistdirectoryatom = _parsePersistDirectoryAtom(self.data.powerpointdocument)
+        # logger.debug(persistdirectoryatom)
+
+        persistdirectoryatom_new = PersistDirectoryAtom(
+            rh=persistdirectoryatom.rh,
+            rgPersistDirEntry=[
+                PersistDirectoryEntry(
+                    persistId=persistdirectoryatom.rgPersistDirEntry[0].persistId,
+                    # Omit CryptSession10Container
+                    cPersist=persistdirectoryatom.rgPersistDirEntry[0].cPersist-1,
+                    rgPersistOffset=persistdirectoryatom.rgPersistDirEntry[0].rgPersistOffset,
+                ),
+            ],
+        )
+
+        self.data.powerpointdocument.seek(usereditatom.offsetPersistDirectory)
+        buf = _packPersistDirectoryAtom(persistdirectoryatom_new)
+        buf_bytes = bytearray(buf.read())
+        offset = usereditatom.offsetPersistDirectory
+        dec_bytearray[offset:offset+len(buf_bytes)] = buf_bytes
+
+        # Persist Objects
+        self.data.powerpointdocument.seek(0)
+        persistobjectdirectory = construct_persistobjectdirectory(self.data)
+
+        directory_items = list(persistobjectdirectory.items())
+
+        for i, (persistId, offset) in enumerate(directory_items):
+            self.data.powerpointdocument.seek(offset)
+            buf = self.data.powerpointdocument.read(8)
+            rh = _parseRecordHeader(io.BytesIO(buf))
+            logger.debug("[*] rh: {}".format(rh))
+
+            # CryptSession10Container
+            if rh.recType == 0x2f14:
+                logger.debug("[*] CryptSession10Container found")
+                # Remove encryption, pad by zero to preserve stream size
+                dec_bytearray[offset:offset+(8+rh.recLen)] = b"\x00" * (8+rh.recLen)
+                continue
+
+            # The UserEditAtom record (section 2.3.3) and the PersistDirectoryAtom record (section 2.3.4) MUST NOT be encrypted.
+            if rh.recType in [0x0ff5, 0x1772]:
+                logger.debug("[*] UserEditAtom/PersistDirectoryAtom found")
+                continue
+
+            # TODO: Fix here
+            recLen = directory_items[i+1][1] - offset - 8
+            logger.debug("[*] recLen: {}".format(recLen))
+
+            self.data.powerpointdocument.seek(offset)
+            enc_buf = io.BytesIO(self.data.powerpointdocument.read(8+recLen))
+            blocksize = self.keySize * ((8 + recLen) // self.keySize + 1)  # Undocumented
+            dec = DocumentRC4CryptoAPI.decrypt(self.key, self.salt, self.keySize, enc_buf, blocksize=blocksize, block=persistId)
+            dec_bytes = bytearray(dec.read())
+            dec_bytearray[offset:offset+len(dec_bytes)] = dec_bytes
+
+        # To BytesIO
+        dec_buf = io.BytesIO(dec_bytearray)
+
+        dec_buf.seek(0)
+        for i, (persistId, offset) in enumerate(directory_items):
+            dec_buf.seek(offset)
+            buf = dec_buf.read(8)
+            rh = _parseRecordHeader(io.BytesIO(buf))
+            logger.debug("[*] rh: {}".format(rh))
+
+        dec_buf.seek(0)
+        logger.debug("[*] powerpointdocument_size={}, len(dec_buf.read())={}".format(powerpointdocument_size, len(dec_buf.read())))
+
+        dec_buf.seek(0)
+        powerpointdocument_dec_buf = dec_buf
+
+        # TODO: Pictures Stream
+        # TODO: Encrypted Summary Info Stream
+
         with tempfile.TemporaryFile() as _ofile:
             self.file.seek(0)
             shutil.copyfileobj(self.file, _ofile)
             outole = olefile.OleFileIO(_ofile, write_mode=True)
 
-            # Current User Stream
-            self.data.currentuser.seek(0)
-            currentuser = _parseCurrentUser(self.data.currentuser)
-            # logger.debug(currentuser)
-
-            cuatom = currentuser.currentuseratom
-
-            currentuser_new = CurrentUser(
-                currentuseratom=CurrentUserAtom(
-                    rh=cuatom.rh,
-                    size=cuatom.size,
-                    # https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-ppt/940d5700-e4d7-4fc0-ab48-fed5dbc48bc1
-                    # 0xE391C05F: The file SHOULD NOT<6> be an encrypted document.
-                    headerToken=0xe391c05f,
-                    offsetToCurrentEdit=cuatom.offsetToCurrentEdit,
-                    lenUserName=cuatom.lenUserName,
-                    docFileVersion=cuatom.docFileVersion,
-                    majorVersion=cuatom.majorVersion,
-                    minorVersion=cuatom.minorVersion,
-                    unused=cuatom.unused,
-                    ansiUserName=cuatom.ansiUserName,
-                    relVersion=cuatom.relVersion,
-                    unicodeUserName=cuatom.unicodeUserName,
-                )
-            )
-
-            buf = _packCurrentUser(currentuser_new)
-            buf.seek(0)
-            outole.write_stream('Current User', buf.read())
-
-            # List of encrypted parts: https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-ppt/b0963334-4408-4621-879a-ef9c54551fd8
-
-            # PowerPoint Document Stream
-
-            self.data.powerpointdocument.seek(0)
-            powerpointdocument_size = len(self.data.powerpointdocument.read())
-            logger.debug("[*] powerpointdocument_size: {}".format(powerpointdocument_size))
-
-            self.data.powerpointdocument.seek(0)
-            dec_bytearray = bytearray(self.data.powerpointdocument.read())
-
-            # UserEditAtom
-            self.data.powerpointdocument.seek(currentuser.currentuseratom.offsetToCurrentEdit)
-            # currentuseratom_raw = self.data.powerpointdocument.read(40)
-
-            self.data.powerpointdocument.seek(currentuser.currentuseratom.offsetToCurrentEdit)
-            usereditatom = _parseUserEditAtom(self.data.powerpointdocument)
-            # logger.debug(usereditatom)
-            # logger.debug(["offsetToCurrentEdit", currentuser.currentuseratom.offsetToCurrentEdit])
-
-            rh_new = RecordHeader(
-                recVer=usereditatom.rh.recVer,
-                recInstance=usereditatom.rh.recInstance,
-                recType=usereditatom.rh.recType,
-                recLen=usereditatom.rh.recLen - 4,  # Omit encryptSessionPersistIdRef field
-            )
-
-            # logger.debug([_packRecordHeader(usereditatom.rh).read(), _packRecordHeader(rh_new).read()])
-
-            usereditatom_new = UserEditAtom(
-                rh=rh_new,
-                lastSlideIdRef=usereditatom.lastSlideIdRef,
-                version=usereditatom.version,
-                minorVersion=usereditatom.minorVersion,
-                majorVersion=usereditatom.majorVersion,
-                offsetLastEdit=usereditatom.offsetLastEdit,
-                offsetPersistDirectory=usereditatom.offsetPersistDirectory,
-                docPersistIdRef=usereditatom.docPersistIdRef,
-                persistIdSeed=usereditatom.persistIdSeed,
-                lastView=usereditatom.lastView,
-                unused=usereditatom.unused,
-                encryptSessionPersistIdRef=0x00000000,  # Clear
-            )
-
-            # logger.debug(currentuseratom_raw)
-            # logger.debug(_packUserEditAtom(usereditatom).read())
-            # logger.debug(_packUserEditAtom(usereditatom_new).read())
-
-            buf = _packUserEditAtom(usereditatom_new)
-            buf.seek(0)
-            buf_bytes = bytearray(buf.read())
-            offset = currentuser.currentuseratom.offsetToCurrentEdit
-            dec_bytearray[offset:offset+len(buf_bytes)] = buf_bytes
-
-            # PersistDirectoryAtom
-            self.data.powerpointdocument.seek(currentuser.currentuseratom.offsetToCurrentEdit)
-            usereditatom = _parseUserEditAtom(self.data.powerpointdocument)
-            # logger.debug(usereditatom)
-
-            self.data.powerpointdocument.seek(usereditatom.offsetPersistDirectory)
-            persistdirectoryatom = _parsePersistDirectoryAtom(self.data.powerpointdocument)
-            # logger.debug(persistdirectoryatom)
-
-            persistdirectoryatom_new = PersistDirectoryAtom(
-                rh=persistdirectoryatom.rh,
-                rgPersistDirEntry=[
-                    PersistDirectoryEntry(
-                        persistId=persistdirectoryatom.rgPersistDirEntry[0].persistId,
-                        # Omit CryptSession10Container
-                        cPersist=persistdirectoryatom.rgPersistDirEntry[0].cPersist-1,
-                        rgPersistOffset=persistdirectoryatom.rgPersistDirEntry[0].rgPersistOffset,
-                    ),
-                ],
-            )
-
-            self.data.powerpointdocument.seek(usereditatom.offsetPersistDirectory)
-            buf = _packPersistDirectoryAtom(persistdirectoryatom_new)
-            buf_bytes = bytearray(buf.read())
-            offset = usereditatom.offsetPersistDirectory
-            dec_bytearray[offset:offset+len(buf_bytes)] = buf_bytes
-
-            # Persist Objects
-            self.data.powerpointdocument.seek(0)
-            persistobjectdirectory = construct_persistobjectdirectory(self.data)
-
-            directory_items = list(persistobjectdirectory.items())
-
-            for i, (persistId, offset) in enumerate(directory_items):
-                self.data.powerpointdocument.seek(offset)
-                buf = self.data.powerpointdocument.read(8)
-                rh = _parseRecordHeader(io.BytesIO(buf))
-                logger.debug("[*] rh: {}".format(rh))
-
-                # CryptSession10Container
-                if rh.recType == 0x2f14:
-                    logger.debug("[*] CryptSession10Container found")
-                    # Remove encryption, pad by zero to preserve stream size
-                    dec_bytearray[offset:offset+(8+rh.recLen)] = b"\x00" * (8+rh.recLen)
-                    continue
-
-                # The UserEditAtom record (section 2.3.3) and the PersistDirectoryAtom record (section 2.3.4) MUST NOT be encrypted.
-                if rh.recType in [0x0ff5, 0x1772]:
-                    logger.debug("[*] UserEditAtom/PersistDirectoryAtom found")
-                    continue
-
-                # TODO: Fix here
-                recLen = directory_items[i+1][1] - offset - 8
-                logger.debug("[*] recLen: {}".format(recLen))
-
-                self.data.powerpointdocument.seek(offset)
-                enc_buf = io.BytesIO(self.data.powerpointdocument.read(8+recLen))
-                blocksize = self.keySize * ((8 + recLen) // self.keySize + 1)  # Undocumented
-                dec = DocumentRC4CryptoAPI.decrypt(self.key, self.salt, self.keySize, enc_buf, blocksize=blocksize, block=persistId)
-                dec_bytes = bytearray(dec.read())
-                dec_bytearray[offset:offset+len(dec_bytes)] = dec_bytes
-
-            # To BytesIO
-            dec_buf = io.BytesIO(dec_bytearray)
-
-            dec_buf.seek(0)
-            for i, (persistId, offset) in enumerate(directory_items):
-                dec_buf.seek(offset)
-                buf = dec_buf.read(8)
-                rh = _parseRecordHeader(io.BytesIO(buf))
-                logger.debug("[*] rh: {}".format(rh))
-
-            dec_buf.seek(0)
-            logger.debug("[*] powerpointdocument_size={}, len(dec_buf.read())={}".format(powerpointdocument_size, len(dec_buf.read())))
-
-            dec_buf.seek(0)
-            outole.write_stream('PowerPoint Document', dec_buf.read())
-
-            # TODO: Pictures Stream
-            # TODO: Encrypted Summary Info Stream
+            outole.write_stream('Current User', currentuser_buf.read())
+            outole.write_stream('PowerPoint Document', powerpointdocument_dec_buf.read())
 
             # Finalize
             _ofile.seek(0)
