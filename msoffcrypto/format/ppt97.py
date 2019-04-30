@@ -492,7 +492,7 @@ def _parse_header_RC4CryptoAPI(encryptionInfo):
 class Ppt97File(base.BaseOfficeFile):
     def __init__(self, file):
         self.file = file
-        ole = olefile.OleFileIO(file)    # closed in destructor
+        ole = olefile.OleFileIO(file)  # do not close this, would close file
         self.ole = ole
         self.format = "ppt97"
         self.keyTypes = ['password']
@@ -510,14 +510,12 @@ class Ppt97File(base.BaseOfficeFile):
         )
 
     def __del__(self):
-        """Destructor, closes opened olefile and streams."""
+        """Destructor, closes opened streams."""
         if hasattr(self, 'data') and self.data:
             if self.data.currentuser:
                 self.data.currentuser.close()
             if self.data.powerpointdocument:
                 self.data.powerpointdocument.close()
-        if hasattr(self, 'ole') and self.ole:
-            self.ole.close()
 
     def load_key(self, password=None):
         persistobjectdirectory = construct_persistobjectdirectory(self.data)

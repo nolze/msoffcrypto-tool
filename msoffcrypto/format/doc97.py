@@ -275,7 +275,7 @@ def _parse_header_RC4CryptoAPI(encryptionHeader):
 class Doc97File(base.BaseOfficeFile):
     def __init__(self, file):
         self.file = file
-        ole = olefile.OleFileIO(file)      # closed in destructor
+        ole = olefile.OleFileIO(file)  # do not close this, would close file
         self.ole = ole
         self.format = "doc97"
         self.keyTypes = ['password']
@@ -294,11 +294,6 @@ class Doc97File(base.BaseOfficeFile):
             fib=fib,
             tablename=tablename,
         )
-
-    def __del__(self):
-        """Destructor, closes opened olefile."""
-        if hasattr(self, 'ole') and self.ole:
-            self.ole.close()
 
     def load_key(self, password=None):
         fib = self.info.fib

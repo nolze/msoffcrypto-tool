@@ -445,7 +445,7 @@ class _BIFFStream:
 class Xls97File(base.BaseOfficeFile):
     def __init__(self, file):
         self.file = file
-        ole = olefile.OleFileIO(file)    # closed in destructor
+        ole = olefile.OleFileIO(file)  # do not close this, would close file
         self.ole = ole
         self.format = "xls97"
         self.keyTypes = ['password']
@@ -460,9 +460,7 @@ class Xls97File(base.BaseOfficeFile):
         )
 
     def __del__(self):
-        """Destructor, closes opened olefile and stream."""
-        if hasattr(self, 'ole') and self.ole:
-            self.ole.close()
+        """Destructor, closes opened stream."""
         if hasattr(self, 'data') and self.data and self.data.workbook:
             self.data.workbook.close()
 
