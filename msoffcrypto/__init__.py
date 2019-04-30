@@ -20,6 +20,7 @@ def OfficeFile(file):
         ...     officefile.keyTypes
         ('password', 'private_key', 'secret_key')
     '''
+    file.seek(0)     # required by isOleFile
     if olefile.isOleFile(file):
         ole = olefile.OleFileIO(file)
     elif zipfile.is_zipfile(file):  # Heuristic
