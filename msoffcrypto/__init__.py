@@ -19,6 +19,9 @@ def OfficeFile(file):
         ...     officefile = OfficeFile(f)
         ...     officefile.keyTypes
         ('password', 'private_key', 'secret_key')
+
+    Given file handle will not be closed, the file position will most certainly
+    change.
     '''
     file.seek(0)     # required by isOleFile
     if olefile.isOleFile(file):
