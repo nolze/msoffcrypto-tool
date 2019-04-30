@@ -73,13 +73,11 @@ class OOXMLFile(base.BaseOfficeFile):
     def __init__(self, file):
         self.format = "ooxml"
         file.seek(0)  # TODO: Investigate the effect (required for olefile.isOleFile)
-        self.close_file_in_destructor = False
         # olefile cannot process non password protected ooxml files.
         # TODO: this code is duplicate of OfficeFile(). Merge?
         if olefile.isOleFile(file):
             ole = olefile.OleFileIO(file)
             self.file = ole
-            self.close_file_in_destructor = True
             with self.file.openstream('EncryptionInfo') as stream:
                 self.type, self.info = _parseinfo(stream)
             logger.debug("OOXMLFile.type: {}".format(self.type))
@@ -97,10 +95,6 @@ class OOXMLFile(base.BaseOfficeFile):
             self.secret_key = None
         else:
             raise Exception("Unsupported file format")
-
-    def __del__(self):
-        if self.close_file_in_destructor and self.file:
-            self.file.close()
 
     def load_key(self, password=None, private_key=None, secret_key=None, strict=False):
         if password:
