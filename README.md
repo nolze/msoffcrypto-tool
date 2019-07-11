@@ -90,7 +90,7 @@ file.decrypt(open("decrypted.docx", "wb"))
 * [ ] Excel 95 Encryption (Excel 95 and prior)
 * [ ] PowerPoint 95 Encryption (PowerPoint 95 and prior)
 
-PRs welcome!
+PRs are welcome!
 
 ## Tests
 
@@ -117,7 +117,7 @@ If the [cryptography](https://pypi.org/project/cryptography/) package is not ins
 * [x] Add the password prompt mode for CLI
 * [ ] Redesign APIs (v5.0.0)
 * [ ] Improve error types (v5.0.0)
-* [ ] Use `ctypes.Structure`
+* [ ] Use a kind of `ctypes.Structure`
 * [ ] Support encryption
 
 ## See also
@@ -135,6 +135,7 @@ If the [cryptography](https://pypi.org/project/cryptography/) package is not ins
 
 * herumi/msoffice <https://github.com/herumi/msoffice>
 * DocRecrypt <https://blogs.technet.microsoft.com/office_resource_kit/2013/01/23/now-you-can-reset-or-remove-a-password-from-a-word-excel-or-powerpoint-filewith-office-2013/>
+* Apache POI - the Java API for Microsoft Documents <https://poi.apache.org/>
 
 ## Use cases and mentions
 
