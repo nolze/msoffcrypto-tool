@@ -15,7 +15,7 @@ msoffcrypto-tool (formerly ms-offcrypto-tool) is a Python tool and library for d
 * [Supported encryption methods](#supported-encryption-methods)
 * [Tests](#tests)
 * [Todo](#todo)
-* [References](#references)
+* [Resources](#resources)
 * [Use cases and mentions](#use-cases-and-mentions)
 * [Contributors](#contributors)
 
