@@ -120,7 +120,7 @@ If the [cryptography](https://pypi.org/project/cryptography/) package is not ins
 * [ ] Use a kind of `ctypes.Structure`
 * [ ] Support encryption
 
-## See also
+## Resources
 
 * "Backdooring MS Office documents with secret master keys" <http://secuinside.com/archive/2015/2015-1-9.pdf>
 * Technical Documents <https://msdn.microsoft.com/en-us/library/cc313105.aspx>
@@ -143,6 +143,7 @@ If the [cryptography](https://pypi.org/project/cryptography/) package is not ins
 * <https://github.com/dtjohnson/xlsx-populate>
 * <https://github.com/shombo/cyberstakes-writeps-2018/tree/master/word_up>
 * <https://isc.sans.edu/forums/diary/Video+Analyzing+Encrypted+Malicious+Office+Documents/24572/>
+* <https://checkroth.com/unlocking-password-protected-files.html>
 
 ## Contributors
 
