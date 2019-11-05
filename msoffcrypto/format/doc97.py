@@ -434,4 +434,16 @@ class Doc97File(base.BaseOfficeFile):
             shutil.copyfileobj(_ofile, ofile)
 
     def is_encrypted(self):
+        r'''
+        Test if the file is encrypted.
+
+            >>> f = open("tests/inputs/plain.doc", "rb")
+            >>> file = Doc97File(f)
+            >>> file.is_encrypted()
+            False
+            >>> f = open("tests/inputs/rc4cryptoapi_password.doc", "rb")
+            >>> file = Doc97File(f)
+            >>> file.is_encrypted()
+            True
+        '''
         return True if self.info.fib.base.fEncrypted == 1 else False
