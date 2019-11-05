@@ -139,6 +139,7 @@ If the [cryptography](https://pypi.org/project/cryptography/) package is not ins
 
 ## Use cases and mentions
 
+* <https://repology.org/project/python:msoffcrypto-tool/versions> (kudos to maintainers!)
 * <https://github.com/jbremer/sflock/commit/3f6a96abe1dbb4405e4fb7fd0d16863f634b09fb>
 * <https://github.com/dtjohnson/xlsx-populate>
 * <https://github.com/shombo/cyberstakes-writeps-2018/tree/master/word_up>
