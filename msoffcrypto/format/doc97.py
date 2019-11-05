@@ -434,4 +434,4 @@ class Doc97File(base.BaseOfficeFile):
             shutil.copyfileobj(_ofile, ofile)
 
     def is_encrypted(self):
-        return self.info.fib.base.fEncrypted
+        return True if self.info.fib.base.fEncrypted == 1 else False
