@@ -41,15 +41,25 @@ def _parseinfo_agile(ole):
     xml = parseString(ole.read())
     keyDataSalt = base64.b64decode(xml.getElementsByTagName('keyData')[0].getAttribute('saltValue'))
     keyDataHashAlgorithm = xml.getElementsByTagName('keyData')[0].getAttribute('hashAlgorithm')
+    keyDataBlockSize = int(xml.getElementsByTagName('keyData')[0].getAttribute('blockSize'))
+    encryptedHmacKey = base64.b64decode(xml.getElementsByTagName('dataIntegrity')[0].getAttribute('encryptedHmacKey'))
+    encryptedHmacValue = base64.b64decode(xml.getElementsByTagName('dataIntegrity')[0].getAttribute('encryptedHmacValue'))
     password_node = xml.getElementsByTagNameNS("http://schemas.microsoft.com/office/2006/keyEncryptor/password", 'encryptedKey')[0]
     spinValue = int(password_node.getAttribute('spinCount'))
     encryptedKeyValue = base64.b64decode(password_node.getAttribute('encryptedKeyValue'))
+    encryptedVerifierHashInput = base64.b64decode(password_node.getAttribute('encryptedVerifierHashInput'))
+    encryptedVerifierHashValue = base64.b64decode(password_node.getAttribute('encryptedVerifierHashValue'))
     passwordSalt = base64.b64decode(password_node.getAttribute('saltValue'))
     passwordHashAlgorithm = password_node.getAttribute('hashAlgorithm')
     passwordKeyBits = int(password_node.getAttribute('keyBits'))
     info = {
         'keyDataSalt': keyDataSalt,
         'keyDataHashAlgorithm': keyDataHashAlgorithm,
+        'keyDataBlockSize': keyDataBlockSize,
+        'encryptedHmacKey': encryptedHmacKey,
+        'encryptedHmacValue': encryptedHmacValue,
+        'encryptedVerifierHashInput': encryptedVerifierHashInput,
+        'encryptedVerifierHashValue': encryptedVerifierHashValue,
         'encryptedKeyValue': encryptedKeyValue,
         'spinValue': spinValue,
         'passwordSalt': passwordSalt,
@@ -96,7 +106,7 @@ class OOXMLFile(base.BaseOfficeFile):
         else:
             raise Exception("Unsupported file format")
 
-    def load_key(self, password=None, private_key=None, secret_key=None, strict=False):
+    def load_key(self, password=None, private_key=None, secret_key=None, verify_passwd=False, strict=False):
         if password:
             if self.type == 'agile':
                 self.secret_key = ECMA376Agile.makekey_from_password(
@@ -107,6 +117,16 @@ class OOXMLFile(base.BaseOfficeFile):
                     self.info['spinValue'],
                     self.info['passwordKeyBits']
                 )
+                if verify_passwd:
+                    verified = ECMA376Agile.verifykey(
+                        self.info['passwordSalt'],
+                        self.info['passwordHashAlgorithm'],
+                        self.info['passwordKeyBits'],
+                        self.info['encryptedVerifierHashInput'],
+                        self.info['encryptedVerifierHashValue']
+                    )
+                    if not verified:
+                        raise Exception("Key verification failed")
             elif self.type == 'standard':
                 self.secret_key = ECMA376Standard.makekey_from_password(
                     password,
@@ -117,13 +137,14 @@ class OOXMLFile(base.BaseOfficeFile):
                     self.info['verifier']['saltSize'],
                     self.info['verifier']['salt']
                 )
-                verified = ECMA376Standard.verifykey(
-                    self.secret_key,
-                    self.info['verifier']['encryptedVerifier'],
-                    self.info['verifier']['encryptedVerifierHash']
-                )
-                if not verified:
-                    raise Exception("Key verification failed")
+                if verify_passwd:
+                    verified = ECMA376Standard.verifykey(
+                        self.secret_key,
+                        self.info['verifier']['encryptedVerifier'],
+                        self.info['verifier']['encryptedVerifierHash']
+                    )
+                    if not verified:
+                        raise Exception("Key verification failed")
             elif self.type == 'extensible':
                 pass
         elif private_key:
@@ -134,9 +155,21 @@ class OOXMLFile(base.BaseOfficeFile):
         elif secret_key:
             self.secret_key = secret_key
 
-    def decrypt(self, ofile):
+    def decrypt(self, ofile, verify_integrity = False):
         if self.type == 'agile':
             with self.file.openstream('EncryptedPackage') as stream:
+                if verify_integrity:
+                    if not ECMA376Agile.verify_payload_integrity(
+                        self.secret_key, self.info['keyDataSalt'],
+                        self.info['keyDataHashAlgorithm'],
+                        self.info['keyDataBlockSize'],
+                        self.info['encryptedHmacKey'],
+                        self.info['encryptedHmacValue'],
+                        stream,
+                        ):
+                        raise Exception('payload integrity verification failed')
+                
+                stream.seek(0)
                 obuf = ECMA376Agile.decrypt(
                     self.secret_key, self.info['keyDataSalt'],
                     self.info['keyDataHashAlgorithm'],
