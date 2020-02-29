@@ -47,11 +47,13 @@ class ECMA376Standard:
         aes = Cipher(algorithms.AES(key), modes.ECB(), backend=default_backend())
         decryptor = aes.decryptor()
         verifier = decryptor.update(encryptedVerifier)
-        hash = sha1(verifier).digest()
+        # "hash" is a Python keyword, overwriting it can cause unexpected problems
+        # changed to expected_hash
+        expected_hash = sha1(verifier).digest()
         decryptor = aes.decryptor()
         verifierHash = decryptor.update(encryptedVerifierHash)[:sha1().digest_size]
-        logging.debug([hash, verifierHash])
-        return hash == verifierHash
+        logging.debug([expected_hash, verifierHash])
+        return expected_hash == verifierHash
 
     @staticmethod
     def makekey_from_password(password, algId, algIdHash, providerType, keySize, saltSize, salt):
