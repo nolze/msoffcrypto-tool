@@ -58,12 +58,22 @@ file = msoffcrypto.OfficeFile(open("encrypted.docx", "rb"))
 # Use password
 file.load_key(password="Passw0rd")
 
+# Verify password before decryption
+# The ECMA-376 Agile/Standard crypto system allows one to know whether the supplied password is correct before actually decrypting the file
+# Currently, the verify_passwd option is only meaningful for ECMA-376 Agile/Standard Encryption
+file.load_key(password="Passw0rd", verify_passwd=True)
+
 # Use private key
 # file.load_key(private_key=open("priv.pem", "rb"))
 # Use intermediate key (secretKey)
 # file.load_key(secret_key=binascii.unhexlify("AE8C36E68B4BB9EA46E5544A5FDB6693875B2FDE1507CBC65C8BCF99E25C2562"))
 
 file.decrypt(open("decrypted.docx", "wb"))
+
+# Check the HMAC of the payload before decryption
+# Currently, the verify_passwd option is only meaningful for ECMA-376 Agile Encryption
+file.decrypt(open("decrypted.docx", "wb"), verify_integrity=True)
+
 ```
 
 ## Supported encryption methods
