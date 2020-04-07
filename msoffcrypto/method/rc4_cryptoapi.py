@@ -19,7 +19,7 @@ def _makekey(password, salt, keyLength, block, algIdHash=0x00008004):
     blockbytes = pack("<I", block)
     hfinal = sha1(h0 + blockbytes).digest()
     if keyLength == 40:
-        key = hfinal[:5]+b'\x00'*11
+        key = hfinal[:5] + b"\x00" * 11
     else:
         key = hfinal[:keyLength // 8]
     return key
