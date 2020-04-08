@@ -276,8 +276,10 @@ def _packUserEditAtom(usereditatom):
     blob.write(buf)
     buf = usereditatom.unused
     blob.write(buf)
-    buf = pack("<I", usereditatom.encryptSessionPersistIdRef)
-    blob.write(buf)
+    # Optional value
+    if usereditatom.encryptSessionPersistIdRef is not None:
+        buf = pack("<I", usereditatom.encryptSessionPersistIdRef)
+        blob.write(buf)
 
     blob.seek(0)
 
