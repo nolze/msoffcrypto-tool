@@ -34,6 +34,7 @@ class DocumentRC4CryptoAPI:
         r'''
         Return True if the given password is valid.
         '''
+        # TODO: For consistency with others, rename method to verify_password or the like
         # https://msdn.microsoft.com/en-us/library/dd953617(v=office.12).aspx
         key = _makekey(password, salt, keySize, block)
         cipher = Cipher(algorithms.ARC4(key), mode=None, backend=default_backend())

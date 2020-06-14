@@ -42,13 +42,12 @@ class ECMA376Standard:
             >>> ECMA376Standard.verifykey(key, encryptedVerifier, encryptedVerifierHash)
             True
         '''
+        # TODO: For consistency with Agile, rename method to verify_password or the like
         logger.debug([key, encryptedVerifier, encryptedVerifierHash])
         # https://msdn.microsoft.com/en-us/library/dd926426(v=office.12).aspx
         aes = Cipher(algorithms.AES(key), modes.ECB(), backend=default_backend())
         decryptor = aes.decryptor()
         verifier = decryptor.update(encryptedVerifier)
-        # "hash" is a Python keyword, overwriting it can cause unexpected problems
-        # changed to expected_hash
         expected_hash = sha1(verifier).digest()
         decryptor = aes.decryptor()
         verifierHash = decryptor.update(encryptedVerifierHash)[:sha1().digest_size]
