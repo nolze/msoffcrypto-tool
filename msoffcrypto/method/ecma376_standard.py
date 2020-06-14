@@ -51,7 +51,6 @@ class ECMA376Standard:
         expected_hash = sha1(verifier).digest()
         decryptor = aes.decryptor()
         verifierHash = decryptor.update(encryptedVerifierHash)[:sha1().digest_size]
-        logging.debug([expected_hash, verifierHash])
         return expected_hash == verifierHash
 
     @staticmethod
