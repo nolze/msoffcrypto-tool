@@ -106,7 +106,7 @@ class OOXMLFile(base.BaseOfficeFile):
         else:
             raise Exception("Unsupported file format")
 
-    def load_key(self, password=None, private_key=None, secret_key=None, verify_passwd=False, strict=False):
+    def load_key(self, password=None, private_key=None, secret_key=None, verify_password=False):
         if password:
             if self.type == 'agile':
                 self.secret_key = ECMA376Agile.makekey_from_password(
@@ -117,13 +117,15 @@ class OOXMLFile(base.BaseOfficeFile):
                     self.info['spinValue'],
                     self.info['passwordKeyBits']
                 )
-                if verify_passwd:
-                    verified = ECMA376Agile.verifykey(
+                if verify_password:
+                    verified = ECMA376Agile.verify_password(
+                        password,
                         self.info['passwordSalt'],
                         self.info['passwordHashAlgorithm'],
-                        self.info['passwordKeyBits'],
                         self.info['encryptedVerifierHashInput'],
-                        self.info['encryptedVerifierHashValue']
+                        self.info['encryptedVerifierHashValue'],
+                        self.info['spinValue'],
+                        self.info['passwordKeyBits']
                     )
                     if not verified:
                         raise Exception("Key verification failed")
@@ -137,7 +139,7 @@ class OOXMLFile(base.BaseOfficeFile):
                     self.info['verifier']['saltSize'],
                     self.info['verifier']['salt']
                 )
-                if verify_passwd:
+                if verify_password:
                     verified = ECMA376Standard.verifykey(
                         self.secret_key,
                         self.info['verifier']['encryptedVerifier'],
@@ -155,21 +157,22 @@ class OOXMLFile(base.BaseOfficeFile):
         elif secret_key:
             self.secret_key = secret_key
 
-    def decrypt(self, ofile, verify_integrity = False):
+    def decrypt(self, ofile, verify_integrity=False):
         if self.type == 'agile':
             with self.file.openstream('EncryptedPackage') as stream:
                 if verify_integrity:
-                    if not ECMA376Agile.verify_payload_integrity(
-                        self.secret_key, self.info['keyDataSalt'],
+                    verified = ECMA376Agile.verify_integrity(
+                        self.secret_key,
+                        self.info['keyDataSalt'],
                         self.info['keyDataHashAlgorithm'],
                         self.info['keyDataBlockSize'],
                         self.info['encryptedHmacKey'],
                         self.info['encryptedHmacValue'],
                         stream,
-                        ):
-                        raise Exception('payload integrity verification failed')
-                
-                stream.seek(0)
+                    )
+                    if not verified:
+                        raise Exception('Payload integrity verification failed')
+
                 obuf = ECMA376Agile.decrypt(
                     self.secret_key, self.info['keyDataSalt'],
                     self.info['keyDataHashAlgorithm'],
