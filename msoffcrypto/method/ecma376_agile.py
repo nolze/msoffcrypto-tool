@@ -1,8 +1,9 @@
+import functools
+import hmac
+import io
 import logging
 from hashlib import sha1, sha512
-import functools, io
 from struct import pack, unpack
-import hmac 
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
@@ -13,23 +14,59 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-def _hashCalc(i, algorithm):
-    if algorithm == "SHA512":
-        return sha512(i)
-    else:
-        return sha1(i)
-
-def getHashFunc(algorithm):
+def _getHashFunc(algorithm):
     if algorithm == 'SHA512':
         return sha512
     else:
         return sha1
 
-class ECMA376Agile:
 
-    key_without_block_key = None
+def _hashCalc(i, algorithm):
+    hash_func = _getHashFunc(algorithm)
+    return hash_func(i)
+
+
+def _decrypt_aes_cbc(data, key, iv):
+    aes = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+    decryptor = aes.decryptor()
+    decrypted = decryptor.update(data) + decryptor.finalize()
+    return decrypted
+
+
+class ECMA376Agile:
     def __init__(self):
         pass
+
+    @staticmethod
+    def _derive_iterated_hash_from_password(password, saltValue, hashAlgorithm, spinValue):
+        r'''
+        Do a partial password-based hash derivation.
+        Note the block key is not taken into consideration in this function.
+        '''
+        # TODO: This function is quite expensive and it should only be called once.
+        # We need to save the result for later use.
+        # This is not covered by the specification, but MS Word does so.
+
+        # NOTE: Initial round sha512(salt + password)
+        h = _hashCalc(saltValue + password.encode("UTF-16LE"), hashAlgorithm)
+
+        # NOTE: Iteration of 0 -> spincount-1; hash = sha512(iterator + hash)
+        for i in range(0, spinValue, 1):
+            h = _hashCalc(pack("<I", i) + h.digest(), hashAlgorithm)
+
+        return h
+
+    @staticmethod
+    def _derive_encryption_key(h, blockKey, hashAlgorithm, keyBits):
+        r'''
+        Finish the password-based key derivation by hashing last hash + blockKey.
+        '''
+        h_final = _hashCalc(h + blockKey, hashAlgorithm)
+
+        # NOTE: Needed to truncate encryption key to bitsize
+        encryption_key = h_final.digest()[:keyBits // 8]
+
+        return encryption_key
 
     @staticmethod
     def decrypt(key, keyDataSalt, hashAlgorithm, ibuf):
@@ -61,82 +98,45 @@ class ECMA376Agile:
         return obuf.getvalue()  # return obuf.getbuffer()
 
     @staticmethod
-    def key_derivation_function_without_block_key(password, saltValue, hashAlgorithm, spinValue):
+    def verify_password(password, saltValue, hashAlgorithm, encryptedVerifierHashInput, encryptedVerifierHashValue, spinValue, keyBits):
         r'''
-        Do a partial password-based key derivation.
-        Note the block key is not taken into consideration in this function. 
+        Return True if the given password is valid.
 
-        This function is quite expensive and it should only be called once.
-        We need to save the result for later use.
-        This is not covered by the specification, but MS Word does so.
+            >>> password = 'Password1234_'
+            >>> saltValue = b'\xcb\xca\x1c\x99\x93C\xfb\xad\x92\x07V4\x15\x004\xb0'
+            >>> hashAlgorithm = 'SHA512'
+            >>> encryptedVerifierHashInput = b'9\xee\xa5N&\xe5\x14y\x8c(K\xc7qM8\xac'
+            >>> encryptedVerifierHashValue = b'\x147mm\x81s4\xe6\xb0\xffO\xd8"\x1a|g\x8e]\x8axN\x8f\x99\x9fL\x18\x890\xc3jK)\xc5\xb33`' + \
+            ... b'[\\\xd4\x03\xb0P\x03\xad\xcf\x18\xcc\xa8\xcb\xab\x8d\xeb\xe3s\xc6V\x04\xa0\xbe\xcf\xae\\\n\xd0'
+            >>> spinValue = 100000
+            >>> keyBits = 256
+            >>> ECMA376Agile.verify_password(password, saltValue, hashAlgorithm, encryptedVerifierHashInput, encryptedVerifierHashValue, spinValue, keyBits)
+            True
         '''
-
-        h = _hashCalc(saltValue + password.encode("UTF-16LE"), hashAlgorithm)
-
-        # Iteration of 0 -> spincount-1; hash = sha512(iterator + hash)
-        for i in range(0, spinValue, 1):
-            h = _hashCalc(pack("<I", i) + h.digest(), hashAlgorithm)
-
-        key = h.digest()
-        # save it for later use
-        ECMA376Agile.key_without_block_key = key
-
-        return key
-    
-    @staticmethod
-    # def key_derivation_function(password, saltValue, blockKey, hashAlgorithm, spinValue, keyBits):
-    def key_derivation_function_final(partialKey, blockKey, hashAlgorithm, keyBits):
-        r'''
-        Finish the password-based key derivation by hashing the partial_key + blockKey. 
-        In Agile, three different constant blockKeys are involved in the decryption
-        '''
-
-        h = _hashCalc(partialKey + blockKey, hashAlgorithm)
-        # Needed to truncate skey to bitsize
-        key = h.digest()[:keyBits // 8]
-
-        return key
-
-    @staticmethod
-    def aes_cbc_drcrypt(data, key, iv):
-        aes = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
-        decryptor = aes.decryptor()
-        decrypted = decryptor.update(data) + decryptor.finalize()
-        return decrypted
-
-    @staticmethod
-    def verifykey(saltValue, hashAlgorithm, keyBits, encryptedVerifierHashInput, encryptedVerifierHashValue):
-        r'''
-        Return True if the given intermediate key is valid.
-        Note makekey_from_password() must be called before calling this function
-        Otherwise, the ECMA376Agile.key_without_block_key is not initialized yet
-        '''
+        # NOTE: See https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/a57cb947-554f-4e5e-b150-3f2978225e92
 
         block1 = bytearray([0xfe, 0xa7, 0xd2, 0x76, 0x3b, 0x4b, 0x9e, 0x79])
         block2 = bytearray([0xd7, 0xaa, 0x0f, 0x6d, 0x30, 0x61, 0x34, 0x4e])
 
-        # note this will NOT do 2 * spinValue rounds of hash calculation, which is redundant
-        # since we saved the key_without_block_key in the key_derivation_function()
-        # only the last round hash with blockKey is carried out
-        key1 = ECMA376Agile.key_derivation_function_final(ECMA376Agile.key_without_block_key, block1, hashAlgorithm, keyBits)
-        key2 = ECMA376Agile.key_derivation_function_final(ECMA376Agile.key_without_block_key, block2, hashAlgorithm, keyBits)
+        h = ECMA376Agile._derive_iterated_hash_from_password(password, saltValue, hashAlgorithm, spinValue)
 
-        hash_input = ECMA376Agile.aes_cbc_drcrypt(encryptedVerifierHashInput, key1, saltValue)
-        h = _hashCalc(hash_input, hashAlgorithm)
-        acutal_hash = h.digest()
+        key1 = ECMA376Agile._derive_encryption_key(h.digest(), block1, hashAlgorithm, keyBits)
+        key2 = ECMA376Agile._derive_encryption_key(h.digest(), block2, hashAlgorithm, keyBits)
 
-        expected_hash = ECMA376Agile.aes_cbc_drcrypt(encryptedVerifierHashValue, key2, saltValue)
+        hash_input = _decrypt_aes_cbc(encryptedVerifierHashInput, key1, saltValue)
+        acutal_hash = _hashCalc(hash_input, hashAlgorithm)
+        acutal_hash = acutal_hash.digest()
 
-        logging.debug([expected_hash, acutal_hash])
+        expected_hash = _decrypt_aes_cbc(encryptedVerifierHashValue, key2, saltValue)
 
         return acutal_hash == expected_hash
 
     @staticmethod
-    def verify_payload_integrity(secretKey, keyDataSalt, keyDataHashAlgorithm, keyDataBlockSize, 
-                            encryptedHmacKey, encryptedHmacValue, stream):
+    def verify_integrity(secretKey, keyDataSalt, keyDataHashAlgorithm, keyDataBlockSize, encryptedHmacKey, encryptedHmacValue, stream):
         r'''
-        Return True if the HMAC of the payload is valid.
+        Return True if the HMAC of the data payload is valid.
         '''
+        # NOTE: See https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/63d9c262-82b9-4fa3-a06d-d087b93e3b00
 
         block4 = bytearray([0x5f, 0xb2, 0xad, 0x01, 0x0c, 0xb9, 0xe1, 0xf6])
         block5 = bytearray([0xa0, 0x67, 0x7f, 0x02, 0xb2, 0x2c, 0x84, 0x33])
@@ -146,11 +146,12 @@ class ECMA376Agile:
         iv2 = _hashCalc(keyDataSalt + block5, keyDataHashAlgorithm).digest()
         iv2 = iv2[: keyDataBlockSize]
 
-        hmacKey = ECMA376Agile.aes_cbc_drcrypt(encryptedHmacKey, secretKey, iv1)
-        hmacValue = ECMA376Agile.aes_cbc_drcrypt(encryptedHmacValue, secretKey, iv2)
+        hmacKey = _decrypt_aes_cbc(encryptedHmacKey, secretKey, iv1)
+        hmacValue = _decrypt_aes_cbc(encryptedHmacValue, secretKey, iv2)
 
-        msg_hmac = hmac.new(hmacKey, stream.read(), getHashFunc(keyDataHashAlgorithm))
+        msg_hmac = hmac.new(hmacKey, stream.read(), _getHashFunc(keyDataHashAlgorithm))
         actualHmac = msg_hmac.digest()
+        stream.seek(0)
 
         return hmacValue == actualHmac
 
@@ -176,9 +177,10 @@ class ECMA376Agile:
             True
         '''
         block3 = bytearray([0x14, 0x6e, 0x0b, 0xe7, 0xab, 0xac, 0xd0, 0xd6])
-        partialKey = ECMA376Agile.key_derivation_function_without_block_key(password, saltValue, hashAlgorithm, spinValue)
-        derivedKey = ECMA376Agile.key_derivation_function_final(partialKey, block3, hashAlgorithm, keyBits)
-        # derived_key = ECMA376Agile.key_derivation_function(password, saltValue, block3, hashAlgorithm, spinValue, keyBits)
-        skey = ECMA376Agile.aes_cbc_drcrypt(encryptedKeyValue, derivedKey, saltValue)
+
+        h = ECMA376Agile._derive_iterated_hash_from_password(password, saltValue, hashAlgorithm, spinValue)
+        encryption_key = ECMA376Agile._derive_encryption_key(h.digest(), block3, hashAlgorithm, keyBits)
+
+        skey = _decrypt_aes_cbc(encryptedKeyValue, encryption_key, saltValue)
 
         return skey
