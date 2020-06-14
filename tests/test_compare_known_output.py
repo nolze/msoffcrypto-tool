@@ -58,7 +58,10 @@ class KnownOutputCompare(unittest.TestCase):
             # now run the relevant parts of __main__.main:
             with open(input_path, 'rb') as input_handle:
                 file = msoffcrypto.OfficeFile(input_handle)
-                file.load_key(password=PASSWORD)
+                if file.format == 'ooxml' and file.type in ['standard', 'agile']:
+                    file.load_key(password=PASSWORD, verify_password=True)
+                else:
+                    file.load_key(password=PASSWORD)
 
                 out_desc = None
                 out_path = None
@@ -72,7 +75,10 @@ class KnownOutputCompare(unittest.TestCase):
 
                         # run decryption, capture output
                         print('decrypting {}'.format(in_name))
-                        file.decrypt(out_handle)
+                        if file.format == 'ooxml' and file.type in ['agile']:
+                            file.decrypt(out_handle, verify_integrity=True)
+                        else:
+                            file.decrypt(out_handle)
 
                     # read extracted output file into memory
                     with open(expect_path, 'rb') as reader:
