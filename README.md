@@ -63,6 +63,25 @@ file.load_key(password="Passw0rd")
 file.decrypt(open("decrypted.docx", "wb"))
 ```
 
+Basic usage (in-memory):
+
+```python
+import msoffcrypto
+import io
+import pandas as pd
+
+file = msoffcrypto.OfficeFile(open("encrypted.xlsx", "rb"))
+
+# Use password
+file.load_key(password="Passw0rd")
+
+decrypted = io.BytesIO()
+file.decrypt(decrypted)
+
+df = pd.read_excel(decrypted)
+print(df)
+```
+
 Advanced usage:
 
 ```python
