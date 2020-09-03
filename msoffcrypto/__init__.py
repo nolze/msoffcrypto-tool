@@ -2,7 +2,7 @@ import olefile
 import zipfile
 
 
-__version__ = "4.10.2"
+__version__ = "4.11.0"
 
 
 def OfficeFile(file):
