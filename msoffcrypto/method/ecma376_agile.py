@@ -14,16 +14,11 @@ logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-def _getHashFunc(algorithm):
+def _get_hash_func(algorithm):
     if algorithm == 'SHA512':
         return sha512
     else:
         return sha1
-
-
-def _hashCalc(i, algorithm):
-    hash_func = _getHashFunc(algorithm)
-    return hash_func(i)
 
 
 def _decrypt_aes_cbc(data, key, iv):
@@ -47,12 +42,14 @@ class ECMA376Agile:
         # We need to save the result for later use.
         # This is not covered by the specification, but MS Word does so.
 
+        hashCalc = _get_hash_func(hashAlgorithm)
+
         # NOTE: Initial round sha512(salt + password)
-        h = _hashCalc(saltValue + password.encode("UTF-16LE"), hashAlgorithm)
+        h = hashCalc(saltValue + password.encode("UTF-16LE"))
 
         # NOTE: Iteration of 0 -> spincount-1; hash = sha512(iterator + hash)
         for i in range(0, spinValue, 1):
-            h = _hashCalc(pack("<I", i) + h.digest(), hashAlgorithm)
+            h = hashCalc(pack("<I", i) + h.digest())
 
         return h
 
@@ -61,7 +58,8 @@ class ECMA376Agile:
         r'''
         Finish the password-based key derivation by hashing last hash + blockKey.
         '''
-        h_final = _hashCalc(h + blockKey, hashAlgorithm)
+        hashCalc = _get_hash_func(hashAlgorithm)
+        h_final = hashCalc(h + blockKey)
 
         # NOTE: Needed to truncate encryption key to bitsize
         encryption_key = h_final.digest()[:keyBits // 8]
@@ -78,6 +76,7 @@ class ECMA376Agile:
             >>> hashAlgorithm = 'SHA512'
         '''
         SEGMENT_LENGTH = 4096
+        hashCalc = _get_hash_func(hashAlgorithm)
 
         obuf = io.BytesIO()
         totalSize = unpack('<I', ibuf.read(4))[0]
@@ -86,7 +85,7 @@ class ECMA376Agile:
         ibuf.seek(8)
         for i, buf in enumerate(iter(functools.partial(ibuf.read, SEGMENT_LENGTH), b'')):
             saltWithBlockKey = keyDataSalt + pack('<I', i)
-            iv = _hashCalc(saltWithBlockKey, hashAlgorithm).digest()
+            iv = hashCalc(saltWithBlockKey).digest()
             iv = iv[:16]
             aes = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
             decryptor = aes.decryptor()
@@ -124,7 +123,8 @@ class ECMA376Agile:
         key2 = ECMA376Agile._derive_encryption_key(h.digest(), block2, hashAlgorithm, keyBits)
 
         hash_input = _decrypt_aes_cbc(encryptedVerifierHashInput, key1, saltValue)
-        acutal_hash = _hashCalc(hash_input, hashAlgorithm)
+        hashCalc = _get_hash_func(hashAlgorithm)
+        acutal_hash = hashCalc(hash_input)
         acutal_hash = acutal_hash.digest()
 
         expected_hash = _decrypt_aes_cbc(encryptedVerifierHashValue, key2, saltValue)
@@ -141,15 +141,17 @@ class ECMA376Agile:
         block4 = bytearray([0x5f, 0xb2, 0xad, 0x01, 0x0c, 0xb9, 0xe1, 0xf6])
         block5 = bytearray([0xa0, 0x67, 0x7f, 0x02, 0xb2, 0x2c, 0x84, 0x33])
 
-        iv1 = _hashCalc(keyDataSalt + block4, keyDataHashAlgorithm).digest()
+        hashCalc = _get_hash_func(keyDataHashAlgorithm)
+
+        iv1 = hashCalc(keyDataSalt + block4).digest()
         iv1 = iv1[: keyDataBlockSize]
-        iv2 = _hashCalc(keyDataSalt + block5, keyDataHashAlgorithm).digest()
+        iv2 = hashCalc(keyDataSalt + block5).digest()
         iv2 = iv2[: keyDataBlockSize]
 
         hmacKey = _decrypt_aes_cbc(encryptedHmacKey, secretKey, iv1)
         hmacValue = _decrypt_aes_cbc(encryptedHmacValue, secretKey, iv2)
 
-        msg_hmac = hmac.new(hmacKey, stream.read(), _getHashFunc(keyDataHashAlgorithm))
+        msg_hmac = hmac.new(hmacKey, stream.read(), hashCalc)
         actualHmac = msg_hmac.digest()
         stream.seek(0)
 
