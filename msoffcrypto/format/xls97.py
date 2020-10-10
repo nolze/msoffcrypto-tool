@@ -8,6 +8,7 @@ from . import base
 from .common import _parse_encryptionheader, _parse_encryptionverifier
 from ..method.rc4 import DocumentRC4
 from ..method.rc4_cryptoapi import DocumentRC4CryptoAPI
+from ..method.xor_obfuscation import DocumentXOR
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -487,36 +488,38 @@ class Xls97File(base.BaseOfficeFile):
         # If this record exists, the workbook MUST be encrypted.
         wEncryptionType, = unpack("<H", workbook.data.read(2))
 
-        if wEncryptionType == 0x0000:  # XOR obfuscation
-            raise Exception("Unsupported encryption method")
-        elif wEncryptionType == 0x0001:  # RC4
-            pass
-
         encryptionInfo = io.BytesIO(workbook.data.read(size-2))
 
-        encryptionVersionInfo = encryptionInfo.read(4)
-        vMajor, vMinor = unpack("<HH", encryptionVersionInfo)
-        logger.debug("Version: {} {}".format(vMajor, vMinor))
-        if vMajor == 0x0001 and vMinor == 0x0001:  # RC4
-            info = _parse_header_RC4(encryptionInfo)
-            if DocumentRC4.verifypw(password, info['salt'], info['encryptedVerifier'], info['encryptedVerifierHash']):
-                self.type = 'rc4'
+        if wEncryptionType == 0x0000:  # XOR obfuscation
+            key, verificationBytes = unpack('<HH', encryptionInfo.read(4))
+            if DocumentXOR.verifypw(password, verificationBytes):
+                self.type = 'xor'
                 self.key = password
-                self.salt = info['salt']
+                self.loc_index = 0
+        elif wEncryptionType == 0x0001:  # RC4
+            encryptionVersionInfo = encryptionInfo.read(4)
+            vMajor, vMinor = unpack("<HH", encryptionVersionInfo)
+            logger.debug("Version: {} {}".format(vMajor, vMinor))
+            if vMajor == 0x0001 and vMinor == 0x0001:  # RC4
+                info = _parse_header_RC4(encryptionInfo)
+                if DocumentRC4.verifypw(password, info['salt'], info['encryptedVerifier'], info['encryptedVerifierHash']):
+                    self.type = 'rc4'
+                    self.key = password
+                    self.salt = info['salt']
+                else:
+                    raise Exception("Failed to verify password")
+            elif vMajor in [0x0002, 0x0003, 0x0004] and vMinor == 0x0002:  # RC4 CryptoAPI
+                info = _parse_header_RC4CryptoAPI(encryptionInfo)
+                if DocumentRC4CryptoAPI.verifypw(password, info['salt'], info['keySize'],
+                                                 info['encryptedVerifier'], info['encryptedVerifierHash']):
+                    self.type = 'rc4_cryptoapi'
+                    self.key = password
+                    self.salt = info['salt']
+                    self.keySize = info['keySize']
+                else:
+                    raise Exception("Failed to verify password")
             else:
-                raise Exception("Failed to verify password")
-        elif vMajor in [0x0002, 0x0003, 0x0004] and vMinor == 0x0002:  # RC4 CryptoAPI
-            info = _parse_header_RC4CryptoAPI(encryptionInfo)
-            if DocumentRC4CryptoAPI.verifypw(password, info['salt'], info['keySize'],
-                                             info['encryptedVerifier'], info['encryptedVerifierHash']):
-                self.type = 'rc4_cryptoapi'
-                self.key = password
-                self.salt = info['salt']
-                self.keySize = info['keySize']
-            else:
-                raise Exception("Failed to verify password")
-        else:
-            raise Exception("Unsupported encryption method")
+                raise Exception("Unsupported encryption method")
 
     def decrypt(self, ofile):
         # fd, _ofile_path = tempfile.mkstemp()
@@ -532,6 +535,7 @@ class Xls97File(base.BaseOfficeFile):
 
         plain_buf = []
         encrypted_buf = io.BytesIO()
+        record_info = []
 
         for i, (num, size, record) in enumerate(workbook.iter_record()):
             # Remove encryption, pad by zero to preserve stream size
@@ -550,22 +554,25 @@ class Xls97File(base.BaseOfficeFile):
             # The lbPlyPos field of the BoundSheet8 record (section 2.4.28) MUST NOT be encrypted.
             elif num == recordNameNum['BoundSheet8']:
                 header = pack("<HH", num, size)
-                plain_buf += list(header) + list(record.read(4)) + [-1] * (size-4)  # Preserve lbPlyPos
+                plain_buf += list(header) + list(record.read(4)) + [-2] * (size-4)  # Preserve lbPlyPos
                 encrypted_buf.write(b"\x00"*4 + b"\x00"*4 + record.read())
             else:
                 header = pack("<HH", num, size)
                 plain_buf += list(header) + [-1] * size
                 encrypted_buf.write(b"\x00"*4 + record.read())
 
+        self.data_size = encrypted_buf.tell()
         encrypted_buf.seek(0)
 
         if self.type == "rc4":
             dec = DocumentRC4.decrypt(self.key, self.salt, encrypted_buf, blocksize=1024)
         elif self.type == "rc4_cryptoapi":
             dec = DocumentRC4CryptoAPI.decrypt(self.key, self.salt, self.keySize, encrypted_buf, blocksize=1024)
+        elif self.type == "xor":
+            dec = DocumentXOR.decrypt(self.key, encrypted_buf, plain_buf, record_info, 10)
 
         for c in plain_buf:
-            if c == -1:
+            if c == -1 or c == -2:
                 dec.seek(1, 1)
             else:
                 dec.write(bytearray([c]))
@@ -625,7 +632,6 @@ class Xls97File(base.BaseOfficeFile):
         if wEncryptionType == 0x0001:  # RC4
             return True
         elif wEncryptionType == 0x0000:  # XOR obfuscation
-            # If not compatible no point stating that
-            raise Exception("Unsupported encryption method")
+            return True
         else:
             return False
