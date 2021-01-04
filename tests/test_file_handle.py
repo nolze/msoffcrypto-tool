@@ -8,7 +8,7 @@ from msoffcrypto import OfficeFile
 
 
 #: directory with input
-DATA_DIR = join(dirname(__file__), 'inputs')
+DATA_DIR = join(dirname(__file__), "inputs")
 
 
 class FileHandleTest(unittest.TestCase):
@@ -16,10 +16,10 @@ class FileHandleTest(unittest.TestCase):
 
     def test_file_handle_open(self):
         """Check that file handles are open after is_encrypted()."""
-        for suffix in 'doc', 'ppt', 'xls':
-            path = join(DATA_DIR, 'plain.' + suffix)
+        for suffix in "doc", "ppt", "xls":
+            path = join(DATA_DIR, "plain." + suffix)
 
-            with open(path, 'rb') as file_handle:
+            with open(path, "rb") as file_handle:
                 ofile = OfficeFile(file_handle)
 
                 # do something with ofile
@@ -40,5 +40,5 @@ class FileHandleTest(unittest.TestCase):
 
 
 # if someone calls this as script, run unittests
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
