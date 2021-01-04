@@ -1,8 +1,8 @@
 import olefile
 import zipfile
+import pkg_resources
 
-
-__version__ = "4.11.0"
+__version__ = pkg_resources.get_distribution('msoffcrypto-tool').version
 
 
 def OfficeFile(file):

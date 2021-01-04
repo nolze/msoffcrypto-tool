@@ -1,9 +1,0 @@
-include README.md
-include LICENSE.txt
-include .noserc
-
-# include test source and data files
-include tests/test_cli.sh
-recursive-include tests *.py
-graft tests/inputs
-graft tests/outputs
