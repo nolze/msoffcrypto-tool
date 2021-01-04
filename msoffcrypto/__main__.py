@@ -24,8 +24,7 @@ def is_encrypted(file):
     Test if the file is encrypted.
 
         >>> f = open("tests/inputs/plain.doc", "rb")
-        >>> file = OfficeFile(f)
-        >>> is_encrypted(file)
+        >>> is_encrypted(f)
         False
     """
     # TODO: Validate file

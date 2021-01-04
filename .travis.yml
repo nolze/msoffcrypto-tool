@@ -13,8 +13,7 @@ before_install:
 install:
 - poetry install
 script:
-- poetry run nosetests -c .noserc
-- poetry run pytest -v ./tests
+- poetry run coverage run -m pytest -v
 after_success:
 - codecov
 deploy:

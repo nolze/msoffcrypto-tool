@@ -129,13 +129,12 @@ PRs are welcome!
 
 ## Tests
 
-Tests can be run in various ways:
+With coverage and pytest:
 
-* `python -m nose -c .noserc`
-* `nosetests -c .noserc`
-* `python -m unittest discover`
-* `python setup.py test`
-* `./tests/test_cli.sh`
+```
+poetry install
+poetry run coverage run -m pytest -v
+```
 
 If the [cryptography](https://pypi.org/project/cryptography/) package is not installed, tests are skipped. If you have dependencies installed only for a certain python version, replace "python" with "pythonX.Y" in the above commands.
 
