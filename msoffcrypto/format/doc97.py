@@ -12,43 +12,46 @@ from ..method.rc4_cryptoapi import DocumentRC4CryptoAPI
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
-FibBase = namedtuple('FibBase', [
-    'wIdent',
-    'nFib',
-    'unused',
-    'lid',
-    'pnNext',
-    'fDot',
-    'fGlsy',
-    'fComplex',
-    'fHasPic',
-    'cQuickSaves',
-    'fEncrypted',
-    'fWhichTblStm',
-    'fReadOnlyRecommended',
-    'fWriteReservation',
-    'fExtChar',
-    'fLoadOverride',
-    'fFarEast',
-    'nFibBack',
-    'fObfuscation',
-    'IKey',
-    'envr',
-    'fMac',
-    'fEmptySpecial',
-    'fLoadOverridePage',
-    'reserved1',
-    'reserved2',
-    'fSpare0',
-    'reserved3',
-    'reserved4',
-    'reserved5',
-    'reserved6',
-])
+FibBase = namedtuple(
+    "FibBase",
+    [
+        "wIdent",
+        "nFib",
+        "unused",
+        "lid",
+        "pnNext",
+        "fDot",
+        "fGlsy",
+        "fComplex",
+        "fHasPic",
+        "cQuickSaves",
+        "fEncrypted",
+        "fWhichTblStm",
+        "fReadOnlyRecommended",
+        "fWriteReservation",
+        "fExtChar",
+        "fLoadOverride",
+        "fFarEast",
+        "nFibBack",
+        "fObfuscation",
+        "IKey",
+        "envr",
+        "fMac",
+        "fEmptySpecial",
+        "fLoadOverridePage",
+        "reserved1",
+        "reserved2",
+        "fSpare0",
+        "reserved3",
+        "reserved4",
+        "reserved5",
+        "reserved6",
+    ],
+)
 
 
 def _parseFibBase(blob):
-    r'''
+    r"""
     Pasrse FibBase binary blob.
 
         >>> blob = io.BytesIO(b'\xec\xa5\xc1\x00G\x00\t\x04\x00\x00\x00\x13\xbf\x004\x00\
@@ -60,27 +63,27 @@ def _parseFibBase(blob):
         '0xc1'
         >>> hex(fibbase.fExtChar)
         '0x1'
-    '''
+    """
     getBit = lambda bits, i: (bits & (1 << i)) >> i
     getBitSlice = lambda bits, i, w: (bits & (2 ** w - 1 << i)) >> i
 
     # https://msdn.microsoft.com/en-us/library/dd944620(v=office.12).aspx
-    buf, = unpack_from("<H", blob.read(2))
+    (buf,) = unpack_from("<H", blob.read(2))
     wIdent = buf
 
-    buf, = unpack_from("<H", blob.read(2))
+    (buf,) = unpack_from("<H", blob.read(2))
     nFib = buf
 
-    buf, = unpack_from("<H", blob.read(2))
+    (buf,) = unpack_from("<H", blob.read(2))
     unused = buf
 
-    buf, = unpack_from("<H", blob.read(2))
+    (buf,) = unpack_from("<H", blob.read(2))
     lid = buf
 
-    buf, = unpack_from("<H", blob.read(2))
+    (buf,) = unpack_from("<H", blob.read(2))
     pnNext = buf
 
-    buf, = unpack_from("<H", blob.read(2))
+    (buf,) = unpack_from("<H", blob.read(2))
     fDot = getBit(buf, 0)
     fGlsy = getBit(buf, 1)
     fComplex = getBit(buf, 2)
@@ -95,16 +98,16 @@ def _parseFibBase(blob):
     fFarEast = getBit(buf, 14)
     fObfuscation = getBit(buf, 15)
 
-    buf, = unpack_from("<H", blob.read(2))
+    (buf,) = unpack_from("<H", blob.read(2))
     nFibBack = buf
 
-    buf, = unpack_from("<I", blob.read(4))
+    (buf,) = unpack_from("<I", blob.read(4))
     IKey = buf
 
-    buf, = unpack_from("<B", blob.read(1))
+    (buf,) = unpack_from("<B", blob.read(1))
     envr = buf
 
-    buf, = unpack_from("<B", blob.read(1))
+    (buf,) = unpack_from("<B", blob.read(1))
     fMac = getBit(buf, 0)
     fEmptySpecial = getBit(buf, 1)
     fLoadOverridePage = getBit(buf, 2)
@@ -112,16 +115,16 @@ def _parseFibBase(blob):
     reserved2 = getBit(buf, 4)
     fSpare0 = getBitSlice(buf, 5, 3)
 
-    buf, = unpack_from("<H", blob.read(2))
+    (buf,) = unpack_from("<H", blob.read(2))
     reserved3 = buf
 
-    buf, = unpack_from("<H", blob.read(2))
+    (buf,) = unpack_from("<H", blob.read(2))
     reserved4 = buf
 
-    buf, = unpack_from("<I", blob.read(4))
+    (buf,) = unpack_from("<I", blob.read(4))
     reserved5 = buf
 
-    buf, = unpack_from("<I", blob.read(4))
+    (buf,) = unpack_from("<I", blob.read(4))
     reserved6 = buf
 
     fibbase = FibBase(
@@ -162,7 +165,7 @@ def _parseFibBase(blob):
 
 def _packFibBase(fibbase):
     setBit = lambda bits, i, v: (bits & ~(1 << i)) | (v << i)
-    setBitSlice = lambda bits, i, w, v: (bits & ~((2**w - 1) << i)) | ((v & (2**w - 1)) << i)
+    setBitSlice = lambda bits, i, w, v: (bits & ~((2 ** w - 1) << i)) | ((v & (2 ** w - 1)) << i)
 
     blob = io.BytesIO()
     buf = pack("<H", fibbase.wIdent)
@@ -180,7 +183,7 @@ def _packFibBase(fibbase):
     buf = pack("<H", fibbase.pnNext)
     blob.write(buf)
 
-    _buf = 0xffff
+    _buf = 0xFFFF
     _buf = setBit(_buf, 0, fibbase.fDot)
     _buf = setBit(_buf, 1, fibbase.fGlsy)
     _buf = setBit(_buf, 2, fibbase.fComplex)
@@ -206,7 +209,7 @@ def _packFibBase(fibbase):
     buf = pack("<B", fibbase.envr)
     blob.write(buf)
 
-    _buf = 0xff
+    _buf = 0xFF
     _buf = setBit(_buf, 0, fibbase.fMac)
     _buf = setBit(_buf, 1, fibbase.fEmptySpecial)
     _buf = setBit(_buf, 2, fibbase.fLoadOverridePage)
@@ -233,10 +236,8 @@ def _packFibBase(fibbase):
 
 
 def _parseFib(blob):
-    Fib = namedtuple('Fib', ['base'])
-    fib = Fib(
-        base=_parseFibBase(blob)
-    )
+    Fib = namedtuple("Fib", ["base"])
+    fib = Fib(base=_parseFibBase(blob))
     return fib
 
 
@@ -246,16 +247,16 @@ def _parse_header_RC4(encryptionHeader):
     encryptedVerifier = encryptionHeader.read(16)
     encryptedVerifierHash = encryptionHeader.read(16)
     info = {
-        'salt': salt,
-        'encryptedVerifier': encryptedVerifier,
-        'encryptedVerifierHash': encryptedVerifierHash,
+        "salt": salt,
+        "encryptedVerifier": encryptedVerifier,
+        "encryptedVerifierHash": encryptedVerifierHash,
     }
     return info
 
 
 def _parse_header_RC4CryptoAPI(encryptionHeader):
     flags = encryptionHeader.read(4)
-    headerSize, = unpack("<I", encryptionHeader.read(4))
+    (headerSize,) = unpack("<I", encryptionHeader.read(4))
     logger.debug(headerSize)
     blob = io.BytesIO(encryptionHeader.read(headerSize))
     header = _parse_encryptionheader(blob)
@@ -264,10 +265,10 @@ def _parse_header_RC4CryptoAPI(encryptionHeader):
     verifier = _parse_encryptionverifier(blob, "RC4")  # TODO: Fix (cf. ooxml.py)
     logger.debug(verifier)
     info = {
-        'salt': verifier['salt'],
-        'keySize': header['keySize'],
-        'encryptedVerifier': verifier['encryptedVerifier'],
-        'encryptedVerifierHash': verifier['encryptedVerifierHash'],
+        "salt": verifier["salt"],
+        "keySize": header["keySize"],
+        "encryptedVerifier": verifier["encryptedVerifier"],
+        "encryptedVerifierHash": verifier["encryptedVerifierHash"],
     }
     return info
 
@@ -278,18 +279,18 @@ class Doc97File(base.BaseOfficeFile):
         ole = olefile.OleFileIO(file)  # do not close this, would close file
         self.ole = ole
         self.format = "doc97"
-        self.keyTypes = ['password']
+        self.keyTypes = ["password"]
         self.key = None
         self.salt = None
 
         # https://msdn.microsoft.com/en-us/library/dd944620(v=office.12).aspx
-        with ole.openstream('wordDocument') as stream:
+        with ole.openstream("wordDocument") as stream:
             fib = _parseFib(stream)
 
         # https://msdn.microsoft.com/en-us/library/dd923367(v=office.12).aspx
-        tablename = '1Table' if fib.base.fWhichTblStm == 1 else '0Table'
+        tablename = "1Table" if fib.base.fWhichTblStm == 1 else "0Table"
 
-        Info = namedtuple('Info', ['fib', 'tablename'])
+        Info = namedtuple("Info", ["fib", "tablename"])
         self.info = Info(
             fib=fib,
             tablename=tablename,
@@ -307,26 +308,27 @@ class Doc97File(base.BaseOfficeFile):
                 encryptionHeader_size = fib.base.IKey
                 logger.debug("encryptionHeader_size: {}".format(hex(encryptionHeader_size)))
                 with self.ole.openstream(self.info.tablename) as table:
-                    encryptionHeader = table          # TODO why create a 2nd reference to same stream?
+                    encryptionHeader = table  # TODO why create a 2nd reference to same stream?
                     encryptionVersionInfo = table.read(4)
                     vMajor, vMinor = unpack("<HH", encryptionVersionInfo)
                     logger.debug("Version: {} {}".format(vMajor, vMinor))
                     if vMajor == 0x0001 and vMinor == 0x0001:  # RC4
                         info = _parse_header_RC4(encryptionHeader)
-                        if DocumentRC4.verifypw(password, info['salt'], info['encryptedVerifier'], info['encryptedVerifierHash']):
-                            self.type = 'rc4'
+                        if DocumentRC4.verifypw(password, info["salt"], info["encryptedVerifier"], info["encryptedVerifierHash"]):
+                            self.type = "rc4"
                             self.key = password
-                            self.salt = info['salt']
+                            self.salt = info["salt"]
                         else:
                             raise Exception("Failed to verify password")
                     elif vMajor in [0x0002, 0x0003, 0x0004] and vMinor == 0x0002:  # RC4 CryptoAPI
                         info = _parse_header_RC4CryptoAPI(encryptionHeader)
-                        if DocumentRC4CryptoAPI.verifypw(password, info['salt'], info['keySize'],
-                                                         info['encryptedVerifier'], info['encryptedVerifierHash']):
-                            self.type = 'rc4_cryptoapi'
+                        if DocumentRC4CryptoAPI.verifypw(
+                            password, info["salt"], info["keySize"], info["encryptedVerifier"], info["encryptedVerifierHash"]
+                        ):
+                            self.type = "rc4_cryptoapi"
                             self.key = password
-                            self.salt = info['salt']
-                            self.keySize = info['keySize']
+                            self.salt = info["salt"]
+                            self.keySize = info["keySize"]
                         else:
                             raise Exception("Failed to verify password")
                     else:
@@ -379,7 +381,7 @@ class Doc97File(base.BaseOfficeFile):
         obuf1.seek(0)
         obuf1.write(header)
 
-        with self.ole.openstream('wordDocument') as worddocument:
+        with self.ole.openstream("wordDocument") as worddocument:
             worddocument.seek(len(header))
             header = worddocument.read(FIB_LENGTH - len(header))
             worddocument.seek(0)
@@ -406,13 +408,13 @@ class Doc97File(base.BaseOfficeFile):
         obuf2.seek(0)
 
         obuf3 = None
-        if self.ole.exists('Data'):
+        if self.ole.exists("Data"):
             obuf3 = io.BytesIO()
             if self.type == "rc4":
-                with self.ole.openstream('Data') as data_stream:
+                with self.ole.openstream("Data") as data_stream:
                     dec3 = DocumentRC4.decrypt(self.key, self.salt, data_stream)
             elif self.type == "rc4_cryptoapi":
-                with self.ole.openstream('Data') as data_stream:
+                with self.ole.openstream("Data") as data_stream:
                     dec3 = DocumentRC4CryptoAPI.decrypt(self.key, self.salt, self.keySize, data_stream)
             obuf3.write(dec3.read())
             obuf3.seek(0)
@@ -422,10 +424,10 @@ class Doc97File(base.BaseOfficeFile):
             shutil.copyfileobj(self.file, _ofile)
             outole = olefile.OleFileIO(_ofile, write_mode=True)
 
-            outole.write_stream('wordDocument', obuf1.read())
+            outole.write_stream("wordDocument", obuf1.read())
             outole.write_stream(self.info.tablename, obuf2.read())
             if obuf3:
-                outole.write_stream('Data', obuf3.read())
+                outole.write_stream("Data", obuf3.read())
 
             # _ofile = open(_ofile_path, 'rb')
 
@@ -434,7 +436,7 @@ class Doc97File(base.BaseOfficeFile):
             shutil.copyfileobj(_ofile, ofile)
 
     def is_encrypted(self):
-        r'''
+        r"""
         Test if the file is encrypted.
 
             >>> f = open("tests/inputs/plain.doc", "rb")
@@ -445,5 +447,5 @@ class Doc97File(base.BaseOfficeFile):
             >>> file = Doc97File(f)
             >>> file.is_encrypted()
             True
-        '''
+        """
         return True if self.info.fib.base.fEncrypted == 1 else False

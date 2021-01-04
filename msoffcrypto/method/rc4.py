@@ -10,7 +10,7 @@ logger.addHandler(logging.NullHandler())
 
 
 def _makekey(password, salt, block):
-    r'''
+    r"""
     Return a intermediate key.
 
         >>> password = 'password1'
@@ -19,7 +19,7 @@ def _makekey(password, salt, block):
         >>> expected = b' \xbf2\xdd\xf5@\x85\x8cQ7D\xaf\x0f$\xe0<'
         >>> _makekey(password, salt, block) == expected
         True
-    '''
+    """
     # https://msdn.microsoft.com/en-us/library/dd920360(v=office.12).aspx
     password = password.encode("UTF-16LE")
     h0 = md5(password).digest()
@@ -29,7 +29,7 @@ def _makekey(password, salt, block):
     truncatedHash = h1[:5]
     blockbytes = pack("<I", block)
     hfinal = md5(truncatedHash + blockbytes).digest()
-    key = hfinal[:128 // 8]
+    key = hfinal[: 128 // 8]
     return key
 
 
@@ -39,7 +39,7 @@ class DocumentRC4:
 
     @staticmethod
     def verifypw(password, salt, encryptedVerifier, encryptedVerifierHash):
-        r'''
+        r"""
         Return True if the given password is valid.
 
             >>> password = 'password1'
@@ -48,7 +48,7 @@ class DocumentRC4:
             >>> encryptedVerifierHash = b'\xb1\xde\x17\x8f\x07\xe9\x89\xc4M\xae^L\xf9j\xc4\x07'
             >>> DocumentRC4.verifypw(password, salt, encryptedVerifier, encryptedVerifierHash)
             True
-        '''
+        """
         # https://msdn.microsoft.com/en-us/library/dd952648(v=office.12).aspx
         block = 0
         key = _makekey(password, salt, block)
@@ -62,15 +62,15 @@ class DocumentRC4:
 
     @staticmethod
     def decrypt(password, salt, ibuf, blocksize=0x200):
-        r'''
+        r"""
         Return decrypted data.
-        '''
+        """
         obuf = io.BytesIO()
 
         block = 0
         key = _makekey(password, salt, block)
 
-        for c, buf in enumerate(iter(functools.partial(ibuf.read, blocksize), b'')):
+        for c, buf in enumerate(iter(functools.partial(ibuf.read, blocksize), b"")):
             cipher = Cipher(algorithms.ARC4(key), mode=None, backend=default_backend())
             decryptor = cipher.decryptor()
 

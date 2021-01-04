@@ -13,20 +13,21 @@ logger.addHandler(logging.NullHandler())
 
 
 def ifWIN32SetBinary(io):
-    if sys.platform == 'win32':
+    if sys.platform == "win32":
         import msvcrt, os
+
         msvcrt.setmode(io.fileno(), os.O_BINARY)
 
 
 def is_encrypted(file):
-    r'''
+    r"""
     Test if the file is encrypted.
 
         >>> f = open("tests/inputs/plain.doc", "rb")
         >>> file = OfficeFile(f)
         >>> is_encrypted(file)
         False
-    '''
+    """
     # TODO: Validate file
     if not olefile.isOleFile(file):
         return False
@@ -38,11 +39,11 @@ def is_encrypted(file):
 
 parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group(required=True)
-group.add_argument('-p', '--password', nargs='?', const='', dest='password', help='Password text.')
-group.add_argument('-t', '--test', dest='test_encrypted', action='store_true', help='Test if the file is encrypted.')
-parser.add_argument('-v', dest='verbose', action='store_true', help='Print verbose information.')
-parser.add_argument('infile', nargs='?', type=argparse.FileType('rb'), help='Input file.')
-parser.add_argument('outfile', nargs='?', type=argparse.FileType('wb'), help='Output file. If blank, stdout is used.')
+group.add_argument("-p", "--password", nargs="?", const="", dest="password", help="Password text.")
+group.add_argument("-t", "--test", dest="test_encrypted", action="store_true", help="Test if the file is encrypted.")
+parser.add_argument("-v", dest="verbose", action="store_true", help="Print verbose information.")
+parser.add_argument("infile", nargs="?", type=argparse.FileType("rb"), help="Input file.")
+parser.add_argument("outfile", nargs="?", type=argparse.FileType("wb"), help="Output file. If blank, stdout is used.")
 
 
 def main():
@@ -74,7 +75,7 @@ def main():
 
     if args.outfile is None:
         ifWIN32SetBinary(sys.stdout)
-        if hasattr(sys.stdout, 'buffer'):  # For Python 2
+        if hasattr(sys.stdout, "buffer"):  # For Python 2
             args.outfile = sys.stdout.buffer
         else:
             args.outfile = sys.stdout
@@ -82,5 +83,5 @@ def main():
     file.decrypt(args.outfile)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
