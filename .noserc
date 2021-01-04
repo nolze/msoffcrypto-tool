@@ -1,6 +1,0 @@
-[nosetests]
-with-doctest=1
-with-coverage=1
-cover-package=msoffcrypto
-verbosity=2
-
