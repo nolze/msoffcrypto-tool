@@ -55,12 +55,15 @@ Basic usage:
 ```python
 import msoffcrypto
 
-file = msoffcrypto.OfficeFile(open("encrypted.docx", "rb"))
+encrypted = open("encrypted.docx", "rb")
+file = msoffcrypto.OfficeFile(encrypted)
 
-# Use password
-file.load_key(password="Passw0rd")
+file.load_key(password="Passw0rd")  # Use password
 
-file.decrypt(open("decrypted.docx", "wb"))
+with open("decrypted.docx", "wb") as f:
+    file.decrypt(f)
+
+encrypted.close()
 ```
 
 Basic usage (in-memory):
@@ -70,13 +73,12 @@ import msoffcrypto
 import io
 import pandas as pd
 
-file = msoffcrypto.OfficeFile(open("encrypted.xlsx", "rb"))
-
-# Use password
-file.load_key(password="Passw0rd")
-
 decrypted = io.BytesIO()
-file.decrypt(decrypted)
+
+with open("encrypted.xlsx", "rb") as f:
+    file = msoffcrypto.OfficeFile(f)
+    file.load_key(password="Passw0rd")  # Use password
+    file.decrypt(decrypted)
 
 df = pd.read_excel(decrypted)
 print(df)
@@ -129,14 +131,12 @@ PRs are welcome!
 
 ## Tests
 
-With coverage and pytest:
+With [coverage](https://github.com/nedbat/coveragepy) and [pytest](https://pytest.org/):
 
 ```
 poetry install
 poetry run coverage run -m pytest -v
 ```
-
-If the [cryptography](https://pypi.org/project/cryptography/) package is not installed, tests are skipped. If you have dependencies installed only for a certain python version, replace "python" with "pythonX.Y" in the above commands.
 
 ## Todo
 
