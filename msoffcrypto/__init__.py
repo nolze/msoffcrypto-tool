@@ -2,6 +2,8 @@ import olefile
 import zipfile
 import pkg_resources
 
+from . import exceptions
+
 __version__ = pkg_resources.get_distribution("msoffcrypto-tool").version
 
 
@@ -20,6 +22,23 @@ def OfficeFile(file):
         ...     officefile.keyTypes
         ('password', 'private_key', 'secret_key')
 
+        >>> with open("tests/inputs/example_password.docx", "rb") as f:
+        ...     officefile = OfficeFile(f)
+        ...     officefile.load_key(password="Password1234_", verify_password=True)
+
+        >>> with open("README.md", "rb") as f:
+        ...     officefile = OfficeFile(f)
+        Traceback (most recent call last):
+            ...
+        msoffcrypto.exceptions.FileFormatError: ...
+
+        >>> with open("tests/inputs/example_password.docx", "rb") as f:
+        ...     officefile = OfficeFile(f)
+        ...     officefile.load_key(password="0000", verify_password=True)
+        Traceback (most recent call last):
+            ...
+        msoffcrypto.exceptions.InvalidKeyError: ...
+
     Given file handle will not be closed, the file position will most certainly
     change.
     """
@@ -31,7 +50,7 @@ def OfficeFile(file):
 
         return OOXMLFile(file)
     else:
-        raise Exception("Unsupported file format")
+        raise exceptions.FileFormatError("Unsupported file format")
 
     # TODO: Make format specifiable by option in case of obstruction
     # Try this first; see https://github.com/nolze/msoffcrypto-tool/issues/17
@@ -58,4 +77,4 @@ def OfficeFile(file):
 
         return Ppt97File(file)
     else:
-        raise Exception("Unrecognized file format")
+        raise exceptions.FileFormatError("Unrecognized file format")

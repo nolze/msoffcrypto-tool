@@ -4,6 +4,7 @@ from collections import namedtuple
 
 import olefile
 
+from .. import exceptions
 from . import base
 from .common import _parse_encryptionheader, _parse_encryptionverifier
 from ..method.rc4 import DocumentRC4
@@ -425,7 +426,7 @@ class _BIFFStream:
         while True:
             h = self.data.read(4)
             if not h:
-                raise Exception("Record not found")
+                raise exceptions.ParseError("Record not found")
             num, size = unpack("<HH", h)
             if num == target:
                 return num, size
@@ -443,6 +444,21 @@ class _BIFFStream:
 
 
 class Xls97File(base.BaseOfficeFile):
+    """Return a MS-XLS file object.
+
+    Examples:
+        >>> with open("tests/inputs/rc4cryptoapi_password.xls", "rb") as f:
+        ...     officefile = Xls97File(f)
+        ...     officefile.load_key(password="Password1234_")
+
+        >>> with open("tests/inputs/rc4cryptoapi_password.xls", "rb") as f:
+        ...     officefile = Xls97File(f)
+        ...     officefile.load_key(password="0000")
+        Traceback (most recent call last):
+            ...
+        msoffcrypto.exceptions.InvalidKeyError: ...
+    """
+
     def __init__(self, file):
         self.file = file
         ole = olefile.OleFileIO(file)  # do not close this, would close file
@@ -488,7 +504,7 @@ class Xls97File(base.BaseOfficeFile):
         (wEncryptionType,) = unpack("<H", workbook.data.read(2))
 
         if wEncryptionType == 0x0000:  # XOR obfuscation
-            raise Exception("Unsupported encryption method")
+            raise exceptions.DecryptionError("Unsupported encryption method")
         elif wEncryptionType == 0x0001:  # RC4
             pass
 
@@ -504,7 +520,7 @@ class Xls97File(base.BaseOfficeFile):
                 self.key = password
                 self.salt = info["salt"]
             else:
-                raise Exception("Failed to verify password")
+                raise exceptions.InvalidKeyError("Failed to verify password")
         elif vMajor in [0x0002, 0x0003, 0x0004] and vMinor == 0x0002:  # RC4 CryptoAPI
             info = _parse_header_RC4CryptoAPI(encryptionInfo)
             if DocumentRC4CryptoAPI.verifypw(
@@ -515,9 +531,9 @@ class Xls97File(base.BaseOfficeFile):
                 self.salt = info["salt"]
                 self.keySize = info["keySize"]
             else:
-                raise Exception("Failed to verify password")
+                raise exceptions.InvalidKeyError("Failed to verify password")
         else:
-            raise Exception("Unsupported encryption method")
+            raise exceptions.DecryptionError("Unsupported encryption method")
 
     def decrypt(self, ofile):
         # fd, _ofile_path = tempfile.mkstemp()
@@ -633,6 +649,6 @@ class Xls97File(base.BaseOfficeFile):
             return True
         elif wEncryptionType == 0x0000:  # XOR obfuscation
             # If not compatible no point stating that
-            raise Exception("Unsupported encryption method")
+            raise exceptions.DecryptionError("Unsupported encryption method")
         else:
             return False

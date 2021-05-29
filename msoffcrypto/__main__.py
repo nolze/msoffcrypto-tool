@@ -7,6 +7,7 @@ import olefile
 
 from . import __version__
 from . import OfficeFile
+from . import exceptions
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -62,7 +63,7 @@ def main():
         return
 
     if not olefile.isOleFile(args.infile):
-        raise Exception("Not OLE file")
+        raise exceptions.FileFormatError("Not OLE file")
 
     file = OfficeFile(args.infile)
 

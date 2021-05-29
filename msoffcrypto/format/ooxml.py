@@ -6,6 +6,7 @@ import zipfile
 
 import olefile
 
+from .. import exceptions
 from . import base
 from .common import _parse_encryptionheader, _parse_encryptionverifier
 from ..method.ecma376_agile import ECMA376Agile
@@ -76,10 +77,25 @@ def _parseinfo(ole):
     elif versionMajor in [2, 3, 4] and versionMinor == 2:  # Standard
         return "standard", _parseinfo_standard(ole)
     elif versionMajor in [3, 4] and versionMinor == 3:  # Extensible
-        raise Exception("Unsupported EncryptionInfo version (Extensible Encryption)")
+        raise exceptions.DecryptionError("Unsupported EncryptionInfo version (Extensible Encryption)")
 
 
 class OOXMLFile(base.BaseOfficeFile):
+    """Return an OOXML file object.
+
+    Examples:
+        >>> with open("tests/inputs/example_password.docx", "rb") as f:
+        ...     officefile = OOXMLFile(f)
+        ...     officefile.load_key(password="Password1234_", verify_password=True)
+
+        >>> with open("tests/inputs/example_password.docx", "rb") as f:
+        ...     officefile = OOXMLFile(f)
+        ...     officefile.load_key(password="0000", verify_password=True)
+        Traceback (most recent call last):
+            ...
+        msoffcrypto.exceptions.InvalidKeyError: ...
+    """
+
     def __init__(self, file):
         self.format = "ooxml"
         file.seek(0)  # TODO: Investigate the effect (required for olefile.isOleFile)
@@ -104,7 +120,7 @@ class OOXMLFile(base.BaseOfficeFile):
             self.type, self.info = None, None
             self.secret_key = None
         else:
-            raise Exception("Unsupported file format")
+            raise exceptions.FileFormatError("Unsupported file format")
 
     def load_key(self, password=None, private_key=None, secret_key=None, verify_password=False):
         if password:
@@ -128,7 +144,7 @@ class OOXMLFile(base.BaseOfficeFile):
                         self.info["passwordKeyBits"],
                     )
                     if not verified:
-                        raise Exception("Key verification failed")
+                        raise exceptions.InvalidKeyError("Key verification failed")
             elif self.type == "standard":
                 self.secret_key = ECMA376Standard.makekey_from_password(
                     password,
@@ -144,14 +160,14 @@ class OOXMLFile(base.BaseOfficeFile):
                         self.secret_key, self.info["verifier"]["encryptedVerifier"], self.info["verifier"]["encryptedVerifierHash"]
                     )
                     if not verified:
-                        raise Exception("Key verification failed")
+                        raise exceptions.InvalidKeyError("Key verification failed")
             elif self.type == "extensible":
                 pass
         elif private_key:
             if self.type == "agile":
                 self.secret_key = ECMA376Agile.makekey_from_privkey(private_key, self.info["encryptedKeyValue"])
             else:
-                raise Exception("Unsupported key type for the encryption method")
+                raise exceptions.DecryptionError("Unsupported key type for the encryption method")
         elif secret_key:
             self.secret_key = secret_key
 
@@ -169,7 +185,7 @@ class OOXMLFile(base.BaseOfficeFile):
                         stream,
                     )
                     if not verified:
-                        raise Exception("Payload integrity verification failed")
+                        raise exceptions.InvalidKeyError("Payload integrity verification failed")
 
                 obuf = ECMA376Agile.decrypt(self.secret_key, self.info["keyDataSalt"], self.info["keyDataHashAlgorithm"], stream)
             ofile.write(obuf)
@@ -180,7 +196,7 @@ class OOXMLFile(base.BaseOfficeFile):
 
         # If the file is successfully decrypted, there must be a valid OOXML file, i.e. a valid zip file
         if not zipfile.is_zipfile(io.BytesIO(obuf)):
-            raise Exception("The file could not be decrypted with this password")
+            raise exceptions.InvalidKeyError("The file could not be decrypted with this password")
 
     def is_encrypted(self):
         # Heuristic
