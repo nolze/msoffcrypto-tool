@@ -4,6 +4,7 @@ from collections import namedtuple
 
 import olefile
 
+from .. import exceptions
 from . import base
 from .common import _parse_encryptionheader, _parse_encryptionverifier
 from ..method.rc4 import DocumentRC4
@@ -274,6 +275,21 @@ def _parse_header_RC4CryptoAPI(encryptionHeader):
 
 
 class Doc97File(base.BaseOfficeFile):
+    """Return a MS-DOC file object.
+
+    Examples:
+        >>> with open("tests/inputs/rc4cryptoapi_password.doc", "rb") as f:
+        ...     officefile = Doc97File(f)
+        ...     officefile.load_key(password="Password1234_")
+
+        >>> with open("tests/inputs/rc4cryptoapi_password.doc", "rb") as f:
+        ...     officefile = Doc97File(f)
+        ...     officefile.load_key(password="0000")
+        Traceback (most recent call last):
+            ...
+        msoffcrypto.exceptions.InvalidKeyError: ...
+    """
+
     def __init__(self, file):
         self.file = file
         ole = olefile.OleFileIO(file)  # do not close this, would close file
@@ -319,7 +335,7 @@ class Doc97File(base.BaseOfficeFile):
                             self.key = password
                             self.salt = info["salt"]
                         else:
-                            raise Exception("Failed to verify password")
+                            raise exceptions.InvalidKeyError("Failed to verify password")
                     elif vMajor in [0x0002, 0x0003, 0x0004] and vMinor == 0x0002:  # RC4 CryptoAPI
                         info = _parse_header_RC4CryptoAPI(encryptionHeader)
                         if DocumentRC4CryptoAPI.verifypw(
@@ -330,9 +346,9 @@ class Doc97File(base.BaseOfficeFile):
                             self.salt = info["salt"]
                             self.keySize = info["keySize"]
                         else:
-                            raise Exception("Failed to verify password")
+                            raise exceptions.InvalidKeyError("Failed to verify password")
                     else:
-                        raise Exception("Unsupported encryption method")
+                        raise exceptions.DecryptionError("Unsupported encryption method")
 
     def decrypt(self, ofile):
         # fd, _ofile_path = tempfile.mkstemp()

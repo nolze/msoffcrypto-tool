@@ -4,6 +4,7 @@ from collections import namedtuple
 
 import olefile
 
+from .. import exceptions
 from . import base
 from .common import _parse_encryptionheader, _parse_encryptionverifier
 from ..method.rc4_cryptoapi import DocumentRC4CryptoAPI
@@ -518,6 +519,21 @@ def _parse_header_RC4CryptoAPI(encryptionInfo):
 
 
 class Ppt97File(base.BaseOfficeFile):
+    """Return a MS-PPT file object.
+
+    Examples:
+        >>> with open("tests/inputs/rc4cryptoapi_password.ppt", "rb") as f:
+        ...     officefile = Ppt97File(f)
+        ...     officefile.load_key(password="Password1234_")
+
+        >>> with open("tests/inputs/rc4cryptoapi_password.ppt", "rb") as f:
+        ...     officefile = Ppt97File(f)
+        ...     officefile.load_key(password="0000")
+        Traceback (most recent call last):
+            ...
+        msoffcrypto.exceptions.InvalidKeyError: ...
+    """
+
     def __init__(self, file):
         self.file = file
         ole = olefile.OleFileIO(file)  # do not close this, would close file
@@ -580,7 +596,7 @@ class Ppt97File(base.BaseOfficeFile):
             self.salt = info["salt"]
             self.keySize = info["keySize"]
         else:
-            raise Exception("Failed to verify password")
+            raise exceptions.InvalidKeyError("Failed to verify password")
 
     def decrypt(self, ofile):
         # Current User Stream
