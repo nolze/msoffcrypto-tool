@@ -149,9 +149,9 @@ poetry run coverage run -m pytest -v
 * [x] Add decryption tests for various file formats
 * [x] Integrate with more comprehensive projects handling MS Office files (such as [oletools](https://github.com/decalage2/oletools/)?) if possible
 * [x] Add the password prompt mode for CLI
+* [x] Improve error types (v4.12.0)
 * [ ] Redesign APIs (v5.0.0)
-* [ ] Improve error types (v5.0.0)
-* [ ] Use a kind of `ctypes.Structure`
+* [ ] Introduce something like `ctypes.Structure`
 * [ ] Support encryption
 
 ## Resources
