@@ -173,12 +173,25 @@ poetry run coverage run -m pytest -v
 
 ## Use cases and mentions
 
+### General
+
 * <https://repology.org/project/python:msoffcrypto-tool/versions> (kudos to maintainers!)
-* <https://github.com/jbremer/sflock/commit/3f6a96abe1dbb4405e4fb7fd0d16863f634b09fb>
-* <https://github.com/dtjohnson/xlsx-populate>
-* <https://github.com/shombo/cyberstakes-writeps-2018/tree/master/word_up>
-* <https://isc.sans.edu/forums/diary/Video+Analyzing+Encrypted+Malicious+Office+Documents/24572/>
 * <https://checkroth.com/unlocking-password-protected-files.html>
+
+### Malware/maldoc analysis
+
+* <https://github.com/jbremer/sflock/commit/3f6a96abe1dbb4405e4fb7fd0d16863f634b09fb>
+* <https://isc.sans.edu/forums/diary/Video+Analyzing+Encrypted+Malicious+Office+Documents/24572/>
+
+### CTF
+
+* <https://github.com/shombo/cyberstakes-writeps-2018/tree/master/word_up>
+* <https://github.com/willi123yao/Cyberthon2020_Writeups/blob/master/csit/Lost_Magic>
+
+### In other languages
+
+* <https://github.com/dtjohnson/xlsx-populate>
+* <https://github.com/opendocument-app/OpenDocument.core/blob/233663b039/src/internal/ooxml/ooxml_crypto.h>
 
 ## Contributors
 
