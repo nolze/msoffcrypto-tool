@@ -153,6 +153,7 @@ poetry run coverage run -m pytest -v
 * [ ] Redesign APIs (v5.0.0)
 * [ ] Introduce something like `ctypes.Structure`
 * [ ] Support encryption
+* [ ] Isolate parser
 
 ## Resources
 
