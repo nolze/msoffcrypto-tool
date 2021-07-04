@@ -6,11 +6,11 @@ import zipfile
 
 import olefile
 
-from .. import exceptions
-from . import base
-from .common import _parse_encryptionheader, _parse_encryptionverifier
-from ..method.ecma376_agile import ECMA376Agile
-from ..method.ecma376_standard import ECMA376Standard
+from msoffcrypto import exceptions
+from msoffcrypto.format import base
+from msoffcrypto.format.common import _parse_encryptionheader, _parse_encryptionverifier
+from msoffcrypto.method.ecma376_agile import ECMA376Agile
+from msoffcrypto.method.ecma376_standard import ECMA376Standard
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())

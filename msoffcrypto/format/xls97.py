@@ -4,11 +4,11 @@ from collections import namedtuple
 
 import olefile
 
-from .. import exceptions
-from . import base
-from .common import _parse_encryptionheader, _parse_encryptionverifier
-from ..method.rc4 import DocumentRC4
-from ..method.rc4_cryptoapi import DocumentRC4CryptoAPI
+from msoffcrypto import exceptions
+from msoffcrypto.format import base
+from msoffcrypto.format.common import _parse_encryptionheader, _parse_encryptionverifier
+from msoffcrypto.method.rc4 import DocumentRC4
+from msoffcrypto.method.rc4_cryptoapi import DocumentRC4CryptoAPI
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
