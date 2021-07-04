@@ -5,9 +5,9 @@ import getpass
 
 import olefile
 
-from . import __version__
-from . import OfficeFile
-from . import exceptions
+from msoffcrypto import __version__
+from msoffcrypto import OfficeFile
+from msoffcrypto import exceptions
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
