@@ -116,9 +116,7 @@ class OOXMLFile(base.BaseOfficeFile):
             elif self.type == "extensible":
                 pass
         elif zipfile.is_zipfile(file):
-            self.file = file
-            self.type, self.info = None, None
-            self.secret_key = None
+            raise exceptions.FileFormatError("Unencrypted document or unsupported file format")
         else:
             raise exceptions.FileFormatError("Unsupported file format")
 
@@ -170,6 +168,8 @@ class OOXMLFile(base.BaseOfficeFile):
                 raise exceptions.DecryptionError("Unsupported key type for the encryption method")
         elif secret_key:
             self.secret_key = secret_key
+        else:
+            raise exceptions.DecryptionError("No key specified")
 
     def decrypt(self, ofile, verify_integrity=False):
         if self.type == "agile":
@@ -193,6 +193,8 @@ class OOXMLFile(base.BaseOfficeFile):
             with self.file.openstream("EncryptedPackage") as stream:
                 obuf = ECMA376Standard.decrypt(self.secret_key, stream)
             ofile.write(obuf)
+        else:
+            raise exceptions.DecryptionError("Unsupported encryption method")
 
         # If the file is successfully decrypted, there must be a valid OOXML file, i.e. a valid zip file
         if not zipfile.is_zipfile(io.BytesIO(obuf)):
