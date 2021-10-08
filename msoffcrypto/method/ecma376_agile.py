@@ -2,7 +2,7 @@ import functools
 import hmac
 import io
 import logging
-from hashlib import sha1, sha512
+from hashlib import sha1, sha256, sha384, sha512
 from struct import pack, unpack
 
 from cryptography.hazmat.backends import default_backend
@@ -13,12 +13,15 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
+ALGORITHM_HASH = {
+    "SHA1": sha1,
+    "SHA256": sha256,
+    "SHA384": sha384,
+    "SHA512": sha512,
+}
 
 def _get_hash_func(algorithm):
-    if algorithm == "SHA512":
-        return sha512
-    else:
-        return sha1
+    return ALGORITHM_HASH.get(algorithm, sha1)
 
 
 def _decrypt_aes_cbc(data, key, iv):
