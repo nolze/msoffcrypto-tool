@@ -586,6 +586,8 @@ class Xls97File(base.BaseOfficeFile):
             dec = DocumentRC4.decrypt(self.key, self.salt, encrypted_buf, blocksize=1024)
         elif self.type == "rc4_cryptoapi":
             dec = DocumentRC4CryptoAPI.decrypt(self.key, self.salt, self.keySize, encrypted_buf, blocksize=1024)
+        else:
+            raise exceptions.DecryptionError("Unsupported encryption method")
 
         for c in plain_buf:
             if c == -1:
