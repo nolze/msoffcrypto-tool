@@ -9,15 +9,12 @@ readme = "README.md"
 packages = [{ include = "msoffcrypto" }]
 
 [tool.poetry.dependencies]
-python = "^2.7 || ^3.6"
+python = "^3.6"
 cryptography = ">=2.3"
 olefile = ">=0.45"
 
 [tool.poetry.dev-dependencies]
-pytest = [
-  { version = ">=6.2.1", python = "^3.6" },
-  { git = "https://github.com/nolze/pytest.git", branch = "4.6.x", python = "^2.7" },
-]
+pytest = { version = ">=6.2.1", python = "^3.6" }
 black = { version = "^20.8b1", python = "^3.6" }
 coverage = { extras = ["toml"], version = "^5.3.1" }
 
