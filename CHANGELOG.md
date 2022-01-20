@@ -1,3 +1,13 @@
+5.0.0 / 2022-01-20
+==================
+
+  * (dev) Add tests on Python 3.7 to 3.9 ([#71](https://github.com/nolze/msoffcrypto-tool/pull/71))
+  * (dev) Track poetry.lock ([#71](https://github.com/nolze/msoffcrypto-tool/pull/71))
+  * (BREAKING) Drop Python 2 support ([#71](https://github.com/nolze/msoffcrypto-tool/pull/71))
+  * Raise exception if no encryption type is specified ([#70](https://github.com/nolze/msoffcrypto-tool/issues/70))
+  * Support SHA256, SHA384 hash algorithm (@jackydo, [#67](https://github.com/nolze/msoffcrypto-tool/pull/67))
+  * Fix errors for unencrypted documents
+  * Use absolute imports ([#63](https://github.com/nolze/msoffcrypto-tool/pull/63))
 
 4.12.0 / 2021-06-04
 ===================
