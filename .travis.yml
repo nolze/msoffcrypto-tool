@@ -3,6 +3,9 @@ notifications:
 language: python
 python:
   - '3.6'
+  - '3.7'
+  - '3.8'
+  - '3.9'
 cache: pip
 before_install:
   - pip install poetry codecov
