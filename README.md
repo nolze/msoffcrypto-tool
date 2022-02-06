@@ -193,6 +193,7 @@ poetry run coverage run -m pytest -v
 
 * <https://github.com/dtjohnson/xlsx-populate>
 * <https://github.com/opendocument-app/OpenDocument.core/blob/233663b039/src/internal/ooxml/ooxml_crypto.h>
+* <https://github.com/jaydadhania08/PHPDecryptXLSXWithPassword>
 
 ## Contributors
 
