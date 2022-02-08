@@ -195,6 +195,12 @@ poetry run coverage run -m pytest -v
 * <https://github.com/opendocument-app/OpenDocument.core/blob/233663b039/src/internal/ooxml/ooxml_crypto.h>
 * <https://github.com/jaydadhania08/PHPDecryptXLSXWithPassword>
 
+### In publications
+
+* [Excel、データ整理＆分析、画像処理の自動化ワザを完全網羅！ 超速Python仕事術大全](https://books.google.co.jp/books?id=TBdVEAAAQBAJ&q=msoffcrypto) (伊沢剛, 2022)
+* ["Analyse de documents malveillants en 2021"](https://twitter.com/decalage2/status/1435255507846053889), MISC Hors-série N° 24, "Reverse engineering : apprenez à analyser des binaires" (Lagadec Philippe, 2021)
+* [シゴトがはかどる Python自動処理の教科書](https://books.google.co.jp/books?id=XEYUEAAAQBAJ&q=msoffcrypto) (クジラ飛行机, 2020)
+
 ## Contributors
 
 * <https://github.com/nolze/msoffcrypto-tool/graphs/contributors>
