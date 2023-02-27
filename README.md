@@ -2,7 +2,7 @@
 
 [![PyPI](https://img.shields.io/pypi/v/msoffcrypto-tool.svg)](https://pypi.org/project/msoffcrypto-tool/)
 [![PyPI downloads](https://img.shields.io/pypi/dm/msoffcrypto-tool.svg)](https://pypistats.org/packages/msoffcrypto-tool)
-[![Build Status](https://travis-ci.com/nolze/msoffcrypto-tool.svg?branch=master)](https://travis-ci.com/nolze/msoffcrypto-tool)
+[![build](https://github.com/nolze/msoffcrypto-tool/actions/workflows/ci.yaml/badge.svg)](https://github.com/nolze/msoffcrypto-tool/actions/workflows/ci.yaml)
 [![Coverage Status](https://codecov.io/gh/nolze/msoffcrypto-tool/branch/master/graph/badge.svg)](https://codecov.io/gh/nolze/msoffcrypto-tool)
 [![Documentation Status](https://readthedocs.org/projects/msoffcrypto-tool/badge/?version=latest)](http://msoffcrypto-tool.readthedocs.io/en/latest/?badge=latest)
 
