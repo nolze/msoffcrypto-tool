@@ -1,3 +1,26 @@
+
+v5.0.1 / 2023-02-28
+===================
+
+  * (dev) Switch to GitHub Actions from Travis CI
+  * Update dependencies, Drop Python 3.6 support
+
+v5.0.0 / 2022-01-20
+===================
+
+  * Bump version
+  * Merge pull request #71 from nolze/update/drop-python2
+  * Add tests on Python 3.7 to 3.9
+  * Track poetry.lock
+  * Drop Python 2 support
+  * Raise exception if no encryption type is specified
+  * Merge pull request #67 from jackydo/pdo_support_sha_256_384
+  * Support SHA256, SHA384 hash algorithm
+  * [skip ci] Update README
+  * Fix errors for unencrypted documents
+  * Merge pull request #63 from nolze/fix/use-absolute-imports
+  * Use absolute imports
+  * Update README
 5.0.0 / 2022-01-20
 ==================
 
