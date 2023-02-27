@@ -9,13 +9,13 @@ readme = "README.md"
 packages = [{ include = "msoffcrypto" }]
 
 [tool.poetry.dependencies]
-python = "^3.6"
-cryptography = ">=2.3"
-olefile = ">=0.45"
+python = "^3.7"
+cryptography = ">=35.0"
+olefile = ">=0.46"
 
 [tool.poetry.dev-dependencies]
-pytest = { version = ">=6.2.1", python = "^3.6" }
-black = { version = "^20.8b1", python = "^3.6" }
+pytest = { version = ">=6.2.1", python = "^3.7" }
+black = { version = "^20.8b1", python = "^3.7" }
 coverage = { extras = ["toml"], version = "^5.3.1" }
 
 [tool.poetry.scripts]
