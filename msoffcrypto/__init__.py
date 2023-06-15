@@ -1,10 +1,18 @@
-import olefile
+import sys
 import zipfile
-import pkg_resources
+
+import olefile
 
 from msoffcrypto import exceptions
 
-__version__ = pkg_resources.get_distribution("msoffcrypto-tool").version
+if sys.version_info >= (3, 8):
+    from importlib import metadata
+
+    __version__ = metadata.version("msoffcrypto-tool")
+else:
+    import pkg_resources
+
+    __version__ = pkg_resources.get_distribution("msoffcrypto-tool").version
 
 
 def OfficeFile(file):
