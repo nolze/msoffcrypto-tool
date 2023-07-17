@@ -160,6 +160,7 @@ poetry run coverage run -m pytest -v
 * "Backdooring MS Office documents with secret master keys" <http://secuinside.com/archive/2015/2015-1-9.pdf>
 * Technical Documents <https://msdn.microsoft.com/en-us/library/cc313105.aspx>
   * [MS-OFFCRYPTO] Agile Encryption <https://msdn.microsoft.com/en-us/library/dd949735(v=office.12).aspx>
+* [MS-OFFDI] Microsoft Office File Format Documentation Introduction <https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offdi/24ed256c-eb5b-494e-b4f6-fb696ad2b4dc>
 * LibreOffice/core <https://github.com/LibreOffice/core>
 * LibreOffice/mso-dumper <https://github.com/LibreOffice/mso-dumper>
 * wvDecrypt <http://www.skynet.ie/~caolan/Packages/wvDecrypt.html>
