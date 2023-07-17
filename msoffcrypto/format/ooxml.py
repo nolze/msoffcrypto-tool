@@ -1,8 +1,9 @@
+import base64
+import io
 import logging
-import base64, io
+import zipfile
 from struct import unpack
 from xml.dom.minidom import parseString
-import zipfile
 
 import olefile
 
@@ -14,6 +15,25 @@ from msoffcrypto.method.ecma376_standard import ECMA376Standard
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
+
+def _is_ooxml(file):
+    if not zipfile.is_zipfile(file):
+        return False
+    try:
+        zfile = zipfile.ZipFile(file)
+        with zfile.open("[Content_Types].xml") as stream:
+            xml = parseString(stream.read())
+            # Heuristic
+            if (
+                xml.documentElement.tagName == "Types"
+                and xml.documentElement.namespaceURI == "http://schemas.openxmlformats.org/package/2006/content-types"
+            ):
+                return True
+            else:
+                return False
+    except:
+        return False
 
 
 def _parseinfo_standard(ole):
@@ -115,12 +135,18 @@ class OOXMLFile(base.BaseOfficeFile):
                 self.keyTypes = ("password", "secret_key")
             elif self.type == "extensible":
                 pass
-        elif zipfile.is_zipfile(file):
-            raise exceptions.FileFormatError("Unencrypted document or unsupported file format")
+        elif _is_ooxml(file):
+            self.type = "plain"
+            self.file = file
         else:
             raise exceptions.FileFormatError("Unsupported file format")
 
     def load_key(self, password=None, private_key=None, secret_key=None, verify_password=False):
+        """
+        >>> with open("tests/outputs/ecma376standard_password_plain.docx", "rb") as f:
+        ...     officefile = OOXMLFile(f)
+        ...     officefile.load_key("1234")
+        """
         if password:
             if self.type == "agile":
                 self.secret_key = ECMA376Agile.makekey_from_password(
@@ -161,6 +187,8 @@ class OOXMLFile(base.BaseOfficeFile):
                         raise exceptions.InvalidKeyError("Key verification failed")
             elif self.type == "extensible":
                 pass
+            elif self.type == "plain":
+                pass
         elif private_key:
             if self.type == "agile":
                 self.secret_key = ECMA376Agile.makekey_from_privkey(private_key, self.info["encryptedKeyValue"])
@@ -172,6 +200,16 @@ class OOXMLFile(base.BaseOfficeFile):
             raise exceptions.DecryptionError("No key specified")
 
     def decrypt(self, ofile, verify_integrity=False):
+        """
+        >>> from msoffcrypto import exceptions
+        >>> from io import BytesIO; ofile = BytesIO()
+        >>> with open("tests/outputs/ecma376standard_password_plain.docx", "rb") as f:
+        ...     officefile = OOXMLFile(f)
+        ...     officefile.load_key("1234")
+        ...     officefile.decrypt(ofile)
+        Traceback (most recent call last):
+        msoffcrypto.exceptions.DecryptionError: Unencrypted document
+        """
         if self.type == "agile":
             with self.file.openstream("EncryptedPackage") as stream:
                 if verify_integrity:
@@ -193,6 +231,8 @@ class OOXMLFile(base.BaseOfficeFile):
             with self.file.openstream("EncryptedPackage") as stream:
                 obuf = ECMA376Standard.decrypt(self.secret_key, stream)
             ofile.write(obuf)
+        elif self.type == "plain":
+            raise exceptions.DecryptionError("Unencrypted document")
         else:
             raise exceptions.DecryptionError("Unsupported encryption method")
 
@@ -201,8 +241,20 @@ class OOXMLFile(base.BaseOfficeFile):
             raise exceptions.InvalidKeyError("The file could not be decrypted with this password")
 
     def is_encrypted(self):
+        """
+        >>> with open("tests/inputs/example_password.docx", "rb") as f:
+        ...     officefile = OOXMLFile(f)
+        ...     officefile.is_encrypted()
+        True
+        >>> with open("tests/outputs/ecma376standard_password_plain.docx", "rb") as f:
+        ...     officefile = OOXMLFile(f)
+        ...     officefile.is_encrypted()
+        False
+        """
         # Heuristic
-        if isinstance(self.file, olefile.OleFileIO):
+        if self.type == "plain":
+            return False
+        elif isinstance(self.file, olefile.OleFileIO):
             return True
         else:
             return False
