@@ -1,4 +1,10 @@
 
+v5.1.0 / 2023-07-17
+===================
+
+  * Load plain OOXML as OfficeFile with type == plain. Fixes [#74](https://github.com/nolze/msoffcrypto-tool/issues/74)
+  * Use importlib.metadata.version in Python >=3.8 ([#77](https://github.com/nolze/msoffcrypto-tool/issues/77))
+
 5.0.1 / 2023-02-28
 ===================
 
