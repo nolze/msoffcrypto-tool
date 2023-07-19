@@ -1,4 +1,10 @@
 
+v5.1.1 / 2023-07-20
+===================
+
+  * Drop Python 3.7 support as it reaches EOL, Add Python 3.11 to CI environments
+  * Get the version in `__main__.py` instead of `__init__.py` to avoid a relevant error in PyInstaller/cx\_Freeze in which `pkg_resources` does not work by default
+
 v5.1.0 / 2023-07-17
 ===================
 
