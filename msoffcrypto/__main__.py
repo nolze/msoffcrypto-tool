@@ -1,21 +1,33 @@
 from __future__ import print_function
-import logging, sys
+
 import argparse
 import getpass
+import logging
+import sys
 
 import olefile
 
-from msoffcrypto import __version__
-from msoffcrypto import OfficeFile
-from msoffcrypto import exceptions
+from msoffcrypto import OfficeFile, exceptions
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
+def _get_version():
+    if sys.version_info >= (3, 8):
+        from importlib import metadata
+
+        return metadata.version("msoffcrypto-tool")
+    else:
+        import pkg_resources
+
+        return pkg_resources.get_distribution("msoffcrypto-tool").version
+
+
 def ifWIN32SetBinary(io):
     if sys.platform == "win32":
-        import msvcrt, os
+        import msvcrt
+        import os
 
         msvcrt.setmode(io.fileno(), os.O_BINARY)
 
@@ -52,7 +64,8 @@ def main():
     if args.verbose:
         logger.removeHandler(logging.NullHandler())
         logging.basicConfig(level=logging.DEBUG, format="%(message)s")
-        logger.debug("Version: {}".format(__version__))
+        version = _get_version()
+        logger.debug("Version: {}".format(version))
 
     if args.test_encrypted:
         if not is_encrypted(args.infile):
