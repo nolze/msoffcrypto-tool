@@ -10,7 +10,7 @@ msoffcrypto-tool (formerly ms-offcrypto-tool) is Python tool and library for dec
 
 ## Contents
 
-* [Install](#install)
+* [Installation](#installation)
 * [Examples](#examples)
 * [Supported encryption methods](#supported-encryption-methods)
 * [Tests](#tests)
@@ -19,7 +19,7 @@ msoffcrypto-tool (formerly ms-offcrypto-tool) is Python tool and library for dec
 * [Use cases and mentions](#use-cases-and-mentions)
 * [Contributors](#contributors)
 
-## Install
+## Installation
 
 ```
 pip install msoffcrypto-tool
