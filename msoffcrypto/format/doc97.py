@@ -1,6 +1,9 @@
-import logging, io, shutil, tempfile
-from struct import pack, unpack, unpack_from
+import io
+import logging
+import shutil
+import tempfile
 from collections import namedtuple
+from struct import pack, unpack, unpack_from
 
 import olefile
 
@@ -66,7 +69,7 @@ def _parseFibBase(blob):
         '0x1'
     """
     getBit = lambda bits, i: (bits & (1 << i)) >> i
-    getBitSlice = lambda bits, i, w: (bits & (2 ** w - 1 << i)) >> i
+    getBitSlice = lambda bits, i, w: (bits & (2**w - 1 << i)) >> i
 
     # https://msdn.microsoft.com/en-us/library/dd944620(v=office.12).aspx
     (buf,) = unpack_from("<H", blob.read(2))
@@ -166,7 +169,7 @@ def _parseFibBase(blob):
 
 def _packFibBase(fibbase):
     setBit = lambda bits, i, v: (bits & ~(1 << i)) | (v << i)
-    setBitSlice = lambda bits, i, w, v: (bits & ~((2 ** w - 1) << i)) | ((v & (2 ** w - 1)) << i)
+    setBitSlice = lambda bits, i, w, v: (bits & ~((2**w - 1) << i)) | ((v & (2**w - 1)) << i)
 
     blob = io.BytesIO()
     buf = pack("<H", fibbase.wIdent)

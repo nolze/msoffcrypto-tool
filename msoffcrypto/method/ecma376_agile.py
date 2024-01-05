@@ -20,6 +20,7 @@ ALGORITHM_HASH = {
     "SHA512": sha512,
 }
 
+
 def _get_hash_func(algorithm):
     return ALGORITHM_HASH.get(algorithm, sha1)
 

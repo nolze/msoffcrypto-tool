@@ -1,6 +1,9 @@
-import logging, io, shutil, tempfile
-from struct import pack, unpack
+import io
+import logging
+import shutil
+import tempfile
 from collections import namedtuple
+from struct import pack, unpack
 
 import olefile
 

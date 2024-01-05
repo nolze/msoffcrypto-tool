@@ -2,12 +2,13 @@
 
 """Compare output of msoffcrypto-tool for a few input files."""
 
+import os
 import sys
 import unittest
-import os
-from os.path import dirname, abspath, isfile, join as pjoin
-from tempfile import mkstemp
 from difflib import SequenceMatcher
+from os.path import abspath, dirname, isfile
+from os.path import join as pjoin
+from tempfile import mkstemp
 
 try:
     import cryptography
@@ -20,7 +21,6 @@ MODULE_BASE_DIR = dirname(TEST_BASE_DIR)
 if sys.path[0] != MODULE_BASE_DIR:
     sys.path.insert(0, MODULE_BASE_DIR)
 import msoffcrypto
-
 
 #: encryption password for files tested here
 PASSWORD = "Password1234_"

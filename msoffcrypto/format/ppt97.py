@@ -1,6 +1,9 @@
-import logging, io, shutil, tempfile
-from struct import pack, unpack
+import io
+import logging
+import shutil
+import tempfile
 from collections import namedtuple
+from struct import pack, unpack
 
 import olefile
 
@@ -26,7 +29,7 @@ RecordHeader = namedtuple(
 
 def _parseRecordHeader(blob):
     # RecordHeader: https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-ppt/df201194-0cd0-4dfb-bf10-eea353d8eabc
-    getBitSlice = lambda bits, i, w: (bits & (2 ** w - 1 << i)) >> i
+    getBitSlice = lambda bits, i, w: (bits & (2**w - 1 << i)) >> i
 
     blob.seek(0)
 
@@ -48,7 +51,7 @@ def _parseRecordHeader(blob):
 
 
 def _packRecordHeader(rh):
-    setBitSlice = lambda bits, i, w, v: (bits & ~((2 ** w - 1) << i)) | ((v & (2 ** w - 1)) << i)
+    setBitSlice = lambda bits, i, w, v: (bits & ~((2**w - 1) << i)) | ((v & (2**w - 1)) << i)
 
     blob = io.BytesIO()
 
@@ -312,7 +315,7 @@ PersistDirectoryEntry = namedtuple(
 
 def _parsePersistDirectoryEntry(blob):
     # PersistDirectoryEntry: https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-ppt/6214b5a6-7ca2-4a86-8a0e-5fd3d3eff1c9
-    getBitSlice = lambda bits, i, w: (bits & (2 ** w - 1 << i)) >> i
+    getBitSlice = lambda bits, i, w: (bits & (2**w - 1 << i)) >> i
 
     (buf,) = unpack("<I", blob.read(4))
     persistId = getBitSlice(buf, 0, 20)
@@ -337,7 +340,7 @@ def _parsePersistDirectoryEntry(blob):
 
 
 def _packPersistDirectoryEntry(directoryentry):
-    setBitSlice = lambda bits, i, w, v: (bits & ~((2 ** w - 1) << i)) | ((v & (2 ** w - 1)) << i)
+    setBitSlice = lambda bits, i, w, v: (bits & ~((2**w - 1) << i)) | ((v & (2**w - 1)) << i)
 
     blob = io.BytesIO()
 

@@ -2,10 +2,9 @@
 
 
 import unittest
-from os.path import join, dirname
+from os.path import dirname, join
 
 from msoffcrypto import OfficeFile
-
 
 #: directory with input
 DATA_DIR = join(dirname(__file__), "inputs")

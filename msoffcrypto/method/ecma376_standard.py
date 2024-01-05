@@ -1,5 +1,5 @@
-import logging
 import io
+import logging
 from hashlib import sha1
 from struct import pack, unpack
 
