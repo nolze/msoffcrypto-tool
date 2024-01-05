@@ -5,14 +5,16 @@ Subpackages
 -----------
 
 .. toctree::
+   :maxdepth: 1
 
-    msoffcrypto.format
-    msoffcrypto.method
+   msoffcrypto.exceptions
+   msoffcrypto.format
+   msoffcrypto.method
 
 Module contents
 ---------------
 
 .. automodule:: msoffcrypto
-    :members:
-    :undoc-members:
-    :show-inheritance:
+   :members:
+   :undoc-members:
+   :show-inheritance:

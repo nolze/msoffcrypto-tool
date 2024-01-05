@@ -1,37 +1,44 @@
-import logging, io, shutil, tempfile
-from struct import pack, unpack
+import io
+import logging
+import shutil
+import tempfile
 from collections import namedtuple
+from struct import pack, unpack
 
 import olefile
 
-from . import base
-from .common import _parse_encryptionheader, _parse_encryptionverifier
-from ..method.rc4_cryptoapi import DocumentRC4CryptoAPI
+from msoffcrypto import exceptions
+from msoffcrypto.format import base
+from msoffcrypto.format.common import _parse_encryptionheader, _parse_encryptionverifier
+from msoffcrypto.method.rc4_cryptoapi import DocumentRC4CryptoAPI
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
 
-RecordHeader = namedtuple('RecordHeader', [
-    'recVer',
-    'recInstance',
-    'recType',
-    'recLen',
-])
+RecordHeader = namedtuple(
+    "RecordHeader",
+    [
+        "recVer",
+        "recInstance",
+        "recType",
+        "recLen",
+    ],
+)
 
 
 def _parseRecordHeader(blob):
     # RecordHeader: https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-ppt/df201194-0cd0-4dfb-bf10-eea353d8eabc
-    getBitSlice = lambda bits, i, w: (bits & (2 ** w - 1 << i)) >> i
+    getBitSlice = lambda bits, i, w: (bits & (2**w - 1 << i)) >> i
 
     blob.seek(0)
 
-    buf, = unpack("<H", blob.read(2))
+    (buf,) = unpack("<H", blob.read(2))
     recVer = getBitSlice(buf, 0, 4)
     recInstance = getBitSlice(buf, 4, 12)
 
-    recType, = unpack("<H", blob.read(2))
-    recLen, = unpack("<I", blob.read(4))
+    (recType,) = unpack("<H", blob.read(2))
+    (recLen,) = unpack("<I", blob.read(4))
 
     rh = RecordHeader(
         recVer=recVer,
@@ -48,7 +55,7 @@ def _packRecordHeader(rh):
 
     blob = io.BytesIO()
 
-    _buf = 0xffff
+    _buf = 0xFFFF
     _buf = setBitSlice(_buf, 0, 4, rh.recVer)
     _buf = setBitSlice(_buf, 4, 12, rh.recInstance)
     buf = pack("<H", _buf)
@@ -65,20 +72,23 @@ def _packRecordHeader(rh):
     return blob
 
 
-CurrentUserAtom = namedtuple('CurrentUserAtom', [
-    'rh',
-    'size',
-    'headerToken',
-    'offsetToCurrentEdit',
-    'lenUserName',
-    'docFileVersion',
-    'majorVersion',
-    'minorVersion',
-    'unused',
-    'ansiUserName',
-    'relVersion',
-    'unicodeUserName',
-])
+CurrentUserAtom = namedtuple(
+    "CurrentUserAtom",
+    [
+        "rh",
+        "size",
+        "headerToken",
+        "offsetToCurrentEdit",
+        "lenUserName",
+        "docFileVersion",
+        "majorVersion",
+        "minorVersion",
+        "unused",
+        "ansiUserName",
+        "relVersion",
+        "unicodeUserName",
+    ],
+)
 
 
 def _parseCurrentUserAtom(blob):
@@ -92,9 +102,9 @@ def _parseCurrentUserAtom(blob):
     # ...Sub-fields are further specified in the following table.
     assert rh.recVer == 0x0
     assert rh.recInstance == 0x000
-    assert rh.recType == 0x0ff6
+    assert rh.recType == 0x0FF6
 
-    size, = unpack("<I", blob.read(4))
+    (size,) = unpack("<I", blob.read(4))
     # logger.debug(hex(size))
 
     # size (4 bytes): ...It MUST be 0x00000014.
@@ -102,19 +112,22 @@ def _parseCurrentUserAtom(blob):
 
     # headerToken (4 bytes): An unsigned integer that specifies
     # a token used to identify whether the file is encrypted.
-    headerToken, = unpack("<I", blob.read(4))
+    (headerToken,) = unpack("<I", blob.read(4))
 
     # TODO: Check headerToken value
 
-    offsetToCurrentEdit, = unpack("<I", blob.read(4))
+    (offsetToCurrentEdit,) = unpack("<I", blob.read(4))
 
-    lenUserName, = unpack("<H", blob.read(2))
-    docFileVersion, = unpack("<H", blob.read(2))
-    majorVersion, minorVersion, = unpack("<BB", blob.read(2))
+    (lenUserName,) = unpack("<H", blob.read(2))
+    (docFileVersion,) = unpack("<H", blob.read(2))
+    (
+        majorVersion,
+        minorVersion,
+    ) = unpack("<BB", blob.read(2))
     unused = blob.read(2)
     ansiUserName = blob.read(lenUserName)
-    relVersion, = unpack("<I", blob.read(4))
-    unicodeUserName = blob.read(2*lenUserName)
+    (relVersion,) = unpack("<I", blob.read(4))
+    unicodeUserName = blob.read(2 * lenUserName)
 
     return CurrentUserAtom(
         rh=rh,
@@ -163,14 +176,12 @@ def _packCurrentUserAtom(currentuseratom):
     return blob
 
 
-CurrentUser = namedtuple('CurrentUser', ['currentuseratom'])
+CurrentUser = namedtuple("CurrentUser", ["currentuseratom"])
 
 
 def _parseCurrentUser(blob):
     # Current User Stream: https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-ppt/76cfa657-07a6-464b-81ab-4c017c611f64
-    currentuser = CurrentUser(
-        currentuseratom=_parseCurrentUserAtom(blob)
-    )
+    currentuser = CurrentUser(currentuseratom=_parseCurrentUserAtom(blob))
     return currentuser
 
 
@@ -185,20 +196,23 @@ def _packCurrentUser(currentuser):
     return blob
 
 
-UserEditAtom = namedtuple('UserEditAtom', [
-    'rh',
-    'lastSlideIdRef',
-    'version',
-    'minorVersion',
-    'majorVersion',
-    'offsetLastEdit',
-    'offsetPersistDirectory',
-    'docPersistIdRef',
-    'persistIdSeed',
-    'lastView',
-    'unused',
-    'encryptSessionPersistIdRef',
-])
+UserEditAtom = namedtuple(
+    "UserEditAtom",
+    [
+        "rh",
+        "lastSlideIdRef",
+        "version",
+        "minorVersion",
+        "majorVersion",
+        "offsetLastEdit",
+        "offsetPersistDirectory",
+        "docPersistIdRef",
+        "persistIdSeed",
+        "lastView",
+        "unused",
+        "encryptSessionPersistIdRef",
+    ],
+)
 
 
 def _parseUserEditAtom(blob):
@@ -212,20 +226,23 @@ def _parseUserEditAtom(blob):
     # ...Sub-fields are further specified in the following table.
     assert rh.recVer == 0x0
     assert rh.recInstance == 0x000
-    assert rh.recType == 0x0ff5
-    assert rh.recLen == 0x0000001c or rh.recLen == 0x00000020  # 0x0000001c + len(encryptSessionPersistIdRef)
+    assert rh.recType == 0x0FF5
+    assert rh.recLen == 0x0000001C or rh.recLen == 0x00000020  # 0x0000001c + len(encryptSessionPersistIdRef)
 
-    lastSlideIdRef, = unpack("<I", blob.read(4))
-    version, = unpack("<H", blob.read(2))
-    minorVersion, majorVersion, = unpack("<BB", blob.read(2))
+    (lastSlideIdRef,) = unpack("<I", blob.read(4))
+    (version,) = unpack("<H", blob.read(2))
+    (
+        minorVersion,
+        majorVersion,
+    ) = unpack("<BB", blob.read(2))
     # majorVersion, minorVersion, = unpack("<BB", blob.read(2))
 
-    offsetLastEdit, = unpack("<I", blob.read(4))
-    offsetPersistDirectory, = unpack("<I", blob.read(4))
-    docPersistIdRef, = unpack("<I", blob.read(4))
+    (offsetLastEdit,) = unpack("<I", blob.read(4))
+    (offsetPersistDirectory,) = unpack("<I", blob.read(4))
+    (docPersistIdRef,) = unpack("<I", blob.read(4))
 
-    persistIdSeed, = unpack("<I", blob.read(4))
-    lastView, = unpack("<H", blob.read(2))
+    (persistIdSeed,) = unpack("<I", blob.read(4))
+    (lastView,) = unpack("<H", blob.read(2))
     unused = blob.read(2)
 
     # encryptSessionPersistIdRef (4 bytes): An optional PersistIdRef
@@ -233,7 +250,7 @@ def _parseUserEditAtom(blob):
     # to find the offset of the CryptSession10Container record (section 2.3.7).
     buf = blob.read(4)
     if len(buf) == 4:
-        encryptSessionPersistIdRef, = unpack("<I", buf)
+        (encryptSessionPersistIdRef,) = unpack("<I", buf)
     else:
         encryptSessionPersistIdRef = None
 
@@ -286,18 +303,21 @@ def _packUserEditAtom(usereditatom):
     return blob
 
 
-PersistDirectoryEntry = namedtuple('PersistDirectoryEntry', [
-    'persistId',
-    'cPersist',
-    'rgPersistOffset',
-])
+PersistDirectoryEntry = namedtuple(
+    "PersistDirectoryEntry",
+    [
+        "persistId",
+        "cPersist",
+        "rgPersistOffset",
+    ],
+)
 
 
 def _parsePersistDirectoryEntry(blob):
     # PersistDirectoryEntry: https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-ppt/6214b5a6-7ca2-4a86-8a0e-5fd3d3eff1c9
-    getBitSlice = lambda bits, i, w: (bits & (2 ** w - 1 << i)) >> i
+    getBitSlice = lambda bits, i, w: (bits & (2**w - 1 << i)) >> i
 
-    buf, = unpack("<I", blob.read(4))
+    (buf,) = unpack("<I", blob.read(4))
     persistId = getBitSlice(buf, 0, 20)
     cPersist = getBitSlice(buf, 20, 12)
 
@@ -308,7 +328,7 @@ def _parsePersistDirectoryEntry(blob):
     rgPersistOffset = []
     pos = 0
     while pos < size_rgPersistOffset:
-        persistoffsetentry, = unpack("<I", _rgPersistOffset.read(4))
+        (persistoffsetentry,) = unpack("<I", _rgPersistOffset.read(4))
         rgPersistOffset.append(persistoffsetentry)
         pos += 4
 
@@ -324,7 +344,7 @@ def _packPersistDirectoryEntry(directoryentry):
 
     blob = io.BytesIO()
 
-    _buf = 0xffffffff
+    _buf = 0xFFFFFFFF
     _buf = setBitSlice(_buf, 0, 20, directoryentry.persistId)
     _buf = setBitSlice(_buf, 20, 12, directoryentry.cPersist)
     buf = pack("<I", _buf)
@@ -339,10 +359,13 @@ def _packPersistDirectoryEntry(directoryentry):
     return blob
 
 
-PersistDirectoryAtom = namedtuple('PersistDirectoryAtom', [
-    'rh',
-    'rgPersistDirEntry',
-])
+PersistDirectoryAtom = namedtuple(
+    "PersistDirectoryAtom",
+    [
+        "rh",
+        "rgPersistDirEntry",
+    ],
+)
 
 
 def _parsePersistDirectoryAtom(blob):
@@ -393,10 +416,13 @@ def _packPersistDirectoryAtom(directoryatom):
 def _parseCryptSession10Container(blob):
     # CryptSession10Container: https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-ppt/b0963334-4408-4621-879a-ef9c54551fd8
 
-    CryptSession10Container = namedtuple('CryptSession10Container', [
-        'rh',
-        'data',
-    ])
+    CryptSession10Container = namedtuple(
+        "CryptSession10Container",
+        [
+            "rh",
+            "data",
+        ],
+    )
 
     # rh (8 bytes): A RecordHeader structure...
     buf = io.BytesIO(blob.read(8))
@@ -404,10 +430,10 @@ def _parseCryptSession10Container(blob):
     # logger.debug(rh)
 
     # ...Sub-fields are further specified in the following table.
-    assert rh.recVer == 0xf
+    assert rh.recVer == 0xF
     # The specified value fails
     # assert rh.recInstance == 0x000
-    assert rh.recType == 0x2f14
+    assert rh.recType == 0x2F14
 
     data = blob.read(rh.recLen)
 
@@ -478,7 +504,7 @@ def construct_persistobjectdirectory(data):
 
 def _parse_header_RC4CryptoAPI(encryptionInfo):
     flags = encryptionInfo.read(4)
-    headerSize, = unpack("<I", encryptionInfo.read(4))
+    (headerSize,) = unpack("<I", encryptionInfo.read(4))
     logger.debug(headerSize)
     blob = io.BytesIO(encryptionInfo.read(headerSize))
     header = _parse_encryptionheader(blob)
@@ -487,29 +513,44 @@ def _parse_header_RC4CryptoAPI(encryptionInfo):
     verifier = _parse_encryptionverifier(blob, "RC4")  # TODO: Fix (cf. ooxml.py)
     logger.debug(verifier)
     info = {
-        'salt': verifier['salt'],
-        'keySize': header['keySize'],
-        'encryptedVerifier': verifier['encryptedVerifier'],
-        'encryptedVerifierHash': verifier['encryptedVerifierHash'],
+        "salt": verifier["salt"],
+        "keySize": header["keySize"],
+        "encryptedVerifier": verifier["encryptedVerifier"],
+        "encryptedVerifierHash": verifier["encryptedVerifierHash"],
     }
     return info
 
 
 class Ppt97File(base.BaseOfficeFile):
+    """Return a MS-PPT file object.
+
+    Examples:
+        >>> with open("tests/inputs/rc4cryptoapi_password.ppt", "rb") as f:
+        ...     officefile = Ppt97File(f)
+        ...     officefile.load_key(password="Password1234_")
+
+        >>> with open("tests/inputs/rc4cryptoapi_password.ppt", "rb") as f:
+        ...     officefile = Ppt97File(f)
+        ...     officefile.load_key(password="0000")
+        Traceback (most recent call last):
+            ...
+        msoffcrypto.exceptions.InvalidKeyError: ...
+    """
+
     def __init__(self, file):
         self.file = file
         ole = olefile.OleFileIO(file)  # do not close this, would close file
         self.ole = ole
         self.format = "ppt97"
-        self.keyTypes = ['password']
+        self.keyTypes = ["password"]
         self.key = None
         self.salt = None
 
         # streams closed in destructor:
-        currentuser = ole.openstream('Current User')
-        powerpointdocument = ole.openstream('PowerPoint Document')
+        currentuser = ole.openstream("Current User")
+        powerpointdocument = ole.openstream("PowerPoint Document")
 
-        Data = namedtuple('Data', ['currentuser', 'powerpointdocument'])
+        Data = namedtuple("Data", ["currentuser", "powerpointdocument"])
         self.data = Data(
             currentuser=currentuser,
             powerpointdocument=powerpointdocument,
@@ -517,7 +558,7 @@ class Ppt97File(base.BaseOfficeFile):
 
     def __del__(self):
         """Destructor, closes opened streams."""
-        if hasattr(self, 'data') and self.data:
+        if hasattr(self, "data") and self.data:
             if self.data.currentuser:
                 self.data.currentuser.close()
             if self.data.powerpointdocument:
@@ -552,14 +593,13 @@ class Ppt97File(base.BaseOfficeFile):
         assert vMajor in [0x0002, 0x0003, 0x0004] and vMinor == 0x0002  # RC4 CryptoAPI
 
         info = _parse_header_RC4CryptoAPI(encryptionInfo)
-        if DocumentRC4CryptoAPI.verifypw(password, info['salt'], info['keySize'],
-                                         info['encryptedVerifier'], info['encryptedVerifierHash']):
-            self.type = 'rc4_cryptoapi'
+        if DocumentRC4CryptoAPI.verifypw(password, info["salt"], info["keySize"], info["encryptedVerifier"], info["encryptedVerifierHash"]):
+            self.type = "rc4_cryptoapi"
             self.key = password
-            self.salt = info['salt']
-            self.keySize = info['keySize']
+            self.salt = info["salt"]
+            self.keySize = info["keySize"]
         else:
-            raise Exception("Failed to verify password")
+            raise exceptions.InvalidKeyError("Failed to verify password")
 
     def decrypt(self, ofile):
         # Current User Stream
@@ -575,7 +615,7 @@ class Ppt97File(base.BaseOfficeFile):
                 size=cuatom.size,
                 # https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-ppt/940d5700-e4d7-4fc0-ab48-fed5dbc48bc1
                 # 0xE391C05F: The file SHOULD NOT<6> be an encrypted document.
-                headerToken=0xe391c05f,
+                headerToken=0xE391C05F,
                 offsetToCurrentEdit=cuatom.offsetToCurrentEdit,
                 lenUserName=cuatom.lenUserName,
                 docFileVersion=cuatom.docFileVersion,
@@ -644,7 +684,7 @@ class Ppt97File(base.BaseOfficeFile):
         buf.seek(0)
         buf_bytes = bytearray(buf.read())
         offset = currentuser.currentuseratom.offsetToCurrentEdit
-        dec_bytearray[offset:offset+len(buf_bytes)] = buf_bytes
+        dec_bytearray[offset : offset + len(buf_bytes)] = buf_bytes
 
         # PersistDirectoryAtom
         self.data.powerpointdocument.seek(currentuser.currentuseratom.offsetToCurrentEdit)
@@ -661,7 +701,7 @@ class Ppt97File(base.BaseOfficeFile):
                 PersistDirectoryEntry(
                     persistId=persistdirectoryatom.rgPersistDirEntry[0].persistId,
                     # Omit CryptSession10Container
-                    cPersist=persistdirectoryatom.rgPersistDirEntry[0].cPersist-1,
+                    cPersist=persistdirectoryatom.rgPersistDirEntry[0].cPersist - 1,
                     rgPersistOffset=persistdirectoryatom.rgPersistDirEntry[0].rgPersistOffset,
                 ),
             ],
@@ -671,7 +711,7 @@ class Ppt97File(base.BaseOfficeFile):
         buf = _packPersistDirectoryAtom(persistdirectoryatom_new)
         buf_bytes = bytearray(buf.read())
         offset = usereditatom.offsetPersistDirectory
-        dec_bytearray[offset:offset+len(buf_bytes)] = buf_bytes
+        dec_bytearray[offset : offset + len(buf_bytes)] = buf_bytes
 
         # Persist Objects
         self.data.powerpointdocument.seek(0)
@@ -686,27 +726,27 @@ class Ppt97File(base.BaseOfficeFile):
             logger.debug("[*] rh: {}".format(rh))
 
             # CryptSession10Container
-            if rh.recType == 0x2f14:
+            if rh.recType == 0x2F14:
                 logger.debug("[*] CryptSession10Container found")
                 # Remove encryption, pad by zero to preserve stream size
-                dec_bytearray[offset:offset+(8+rh.recLen)] = b"\x00" * (8+rh.recLen)
+                dec_bytearray[offset : offset + (8 + rh.recLen)] = b"\x00" * (8 + rh.recLen)
                 continue
 
             # The UserEditAtom record (section 2.3.3) and the PersistDirectoryAtom record (section 2.3.4) MUST NOT be encrypted.
-            if rh.recType in [0x0ff5, 0x1772]:
+            if rh.recType in [0x0FF5, 0x1772]:
                 logger.debug("[*] UserEditAtom/PersistDirectoryAtom found")
                 continue
 
             # TODO: Fix here
-            recLen = directory_items[i+1][1] - offset - 8
+            recLen = directory_items[i + 1][1] - offset - 8
             logger.debug("[*] recLen: {}".format(recLen))
 
             self.data.powerpointdocument.seek(offset)
-            enc_buf = io.BytesIO(self.data.powerpointdocument.read(8+recLen))
+            enc_buf = io.BytesIO(self.data.powerpointdocument.read(8 + recLen))
             blocksize = self.keySize * ((8 + recLen) // self.keySize + 1)  # Undocumented
             dec = DocumentRC4CryptoAPI.decrypt(self.key, self.salt, self.keySize, enc_buf, blocksize=blocksize, block=persistId)
             dec_bytes = bytearray(dec.read())
-            dec_bytearray[offset:offset+len(dec_bytes)] = dec_bytes
+            dec_bytearray[offset : offset + len(dec_bytes)] = dec_bytes
 
         # To BytesIO
         dec_buf = io.BytesIO(dec_bytearray)
@@ -732,8 +772,8 @@ class Ppt97File(base.BaseOfficeFile):
             shutil.copyfileobj(self.file, _ofile)
             outole = olefile.OleFileIO(_ofile, write_mode=True)
 
-            outole.write_stream('Current User', currentuser_buf.read())
-            outole.write_stream('PowerPoint Document', powerpointdocument_dec_buf.read())
+            outole.write_stream("Current User", currentuser_buf.read())
+            outole.write_stream("PowerPoint Document", powerpointdocument_dec_buf.read())
 
             # Finalize
             _ofile.seek(0)
@@ -742,7 +782,7 @@ class Ppt97File(base.BaseOfficeFile):
         return
 
     def is_encrypted(self):
-        r'''
+        r"""
         Test if the file is encrypted.
 
             >>> f = open("tests/inputs/plain.ppt", "rb")
@@ -753,7 +793,7 @@ class Ppt97File(base.BaseOfficeFile):
             >>> file = Ppt97File(f)
             >>> file.is_encrypted()
             True
-        '''
+        """
         self.data.currentuser.seek(0)
         currentuser = _parseCurrentUser(self.data.currentuser)
         logger.debug("[*] currentuser: {}".format(currentuser))

@@ -1,4 +1,6 @@
-import functools, io, logging
+import functools
+import io
+import logging
 from hashlib import sha1
 from struct import pack
 
@@ -10,9 +12,9 @@ logger.addHandler(logging.NullHandler())
 
 
 def _makekey(password, salt, keyLength, block, algIdHash=0x00008004):
-    r'''
+    r"""
     Return a intermediate key.
-    '''
+    """
     # https://msdn.microsoft.com/en-us/library/dd920677(v=office.12).aspx
     password = password.encode("UTF-16LE")
     h0 = sha1(salt + password).digest()
@@ -21,7 +23,7 @@ def _makekey(password, salt, keyLength, block, algIdHash=0x00008004):
     if keyLength == 40:
         key = hfinal[:5] + b"\x00" * 11
     else:
-        key = hfinal[:keyLength // 8]
+        key = hfinal[: keyLength // 8]
     return key
 
 
@@ -31,9 +33,9 @@ class DocumentRC4CryptoAPI:
 
     @staticmethod
     def verifypw(password, salt, keySize, encryptedVerifier, encryptedVerifierHash, algId=0x00006801, block=0):
-        r'''
+        r"""
         Return True if the given password is valid.
-        '''
+        """
         # TODO: For consistency with others, rename method to verify_password or the like
         # https://msdn.microsoft.com/en-us/library/dd953617(v=office.12).aspx
         key = _makekey(password, salt, keySize, block)
@@ -47,14 +49,14 @@ class DocumentRC4CryptoAPI:
 
     @staticmethod
     def decrypt(password, salt, keySize, ibuf, blocksize=0x200, block=0):
-        r'''
+        r"""
         Return decrypted data.
-        '''
+        """
         obuf = io.BytesIO()
 
         key = _makekey(password, salt, keySize, block)
 
-        for c, buf in enumerate(iter(functools.partial(ibuf.read, blocksize), b'')):
+        for c, buf in enumerate(iter(functools.partial(ibuf.read, blocksize), b"")):
             cipher = Cipher(algorithms.ARC4(key), mode=None, backend=default_backend())
             decryptor = cipher.decryptor()
 

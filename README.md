@@ -2,15 +2,15 @@
 
 [![PyPI](https://img.shields.io/pypi/v/msoffcrypto-tool.svg)](https://pypi.org/project/msoffcrypto-tool/)
 [![PyPI downloads](https://img.shields.io/pypi/dm/msoffcrypto-tool.svg)](https://pypistats.org/packages/msoffcrypto-tool)
-[![Build Status](https://travis-ci.com/nolze/msoffcrypto-tool.svg?branch=master)](https://travis-ci.com/nolze/msoffcrypto-tool)
+[![build](https://github.com/nolze/msoffcrypto-tool/actions/workflows/ci.yaml/badge.svg)](https://github.com/nolze/msoffcrypto-tool/actions/workflows/ci.yaml)
 [![Coverage Status](https://codecov.io/gh/nolze/msoffcrypto-tool/branch/master/graph/badge.svg)](https://codecov.io/gh/nolze/msoffcrypto-tool)
 [![Documentation Status](https://readthedocs.org/projects/msoffcrypto-tool/badge/?version=latest)](http://msoffcrypto-tool.readthedocs.io/en/latest/?badge=latest)
 
-msoffcrypto-tool (formerly ms-offcrypto-tool) is a Python tool and library for decrypting encrypted MS Office files with password, intermediate key, or private key which generated its escrow key.
+msoffcrypto-tool (formerly ms-offcrypto-tool) is Python tool and library for decrypting encrypted MS Office files with password, intermediate key, or private key which generated its escrow key.
 
 ## Contents
 
-* [Install](#install)
+* [Installation](#installation)
 * [Examples](#examples)
 * [Supported encryption methods](#supported-encryption-methods)
 * [Tests](#tests)
@@ -19,7 +19,7 @@ msoffcrypto-tool (formerly ms-offcrypto-tool) is a Python tool and library for d
 * [Use cases and mentions](#use-cases-and-mentions)
 * [Contributors](#contributors)
 
-## Install
+## Installation
 
 ```
 pip install msoffcrypto-tool
@@ -55,12 +55,15 @@ Basic usage:
 ```python
 import msoffcrypto
 
-file = msoffcrypto.OfficeFile(open("encrypted.docx", "rb"))
+encrypted = open("encrypted.docx", "rb")
+file = msoffcrypto.OfficeFile(encrypted)
 
-# Use password
-file.load_key(password="Passw0rd")
+file.load_key(password="Passw0rd")  # Use password
 
-file.decrypt(open("decrypted.docx", "wb"))
+with open("decrypted.docx", "wb") as f:
+    file.decrypt(f)
+
+encrypted.close()
 ```
 
 Basic usage (in-memory):
@@ -70,13 +73,12 @@ import msoffcrypto
 import io
 import pandas as pd
 
-file = msoffcrypto.OfficeFile(open("encrypted.xlsx", "rb"))
-
-# Use password
-file.load_key(password="Passw0rd")
-
 decrypted = io.BytesIO()
-file.decrypt(decrypted)
+
+with open("encrypted.xlsx", "rb") as f:
+    file = msoffcrypto.OfficeFile(f)
+    file.load_key(password="Passw0rd")  # Use password
+    file.decrypt(decrypted)
 
 df = pd.read_excel(decrypted)
 print(df)
@@ -129,15 +131,12 @@ PRs are welcome!
 
 ## Tests
 
-Tests can be run in various ways:
+With [coverage](https://github.com/nedbat/coveragepy) and [pytest](https://pytest.org/):
 
-* `python -m nose -c .noserc`
-* `nosetests -c .noserc`
-* `python -m unittest discover`
-* `python setup.py test`
-* `./tests/test_cli.sh`
-
-If the [cryptography](https://pypi.org/project/cryptography/) package is not installed, tests are skipped. If you have dependencies installed only for a certain python version, replace "python" with "pythonX.Y" in the above commands.
+```
+poetry install
+poetry run coverage run -m pytest -v
+```
 
 ## Todo
 
@@ -150,16 +149,18 @@ If the [cryptography](https://pypi.org/project/cryptography/) package is not ins
 * [x] Add decryption tests for various file formats
 * [x] Integrate with more comprehensive projects handling MS Office files (such as [oletools](https://github.com/decalage2/oletools/)?) if possible
 * [x] Add the password prompt mode for CLI
-* [ ] Redesign APIs (v5.0.0)
-* [ ] Improve error types (v5.0.0)
-* [ ] Use a kind of `ctypes.Structure`
+* [x] Improve error types (v4.12.0)
+* [ ] Redesign APIs (v6.0.0)
+* [ ] Introduce something like `ctypes.Structure`
 * [ ] Support encryption
+* [ ] Isolate parser
 
 ## Resources
 
 * "Backdooring MS Office documents with secret master keys" <http://secuinside.com/archive/2015/2015-1-9.pdf>
 * Technical Documents <https://msdn.microsoft.com/en-us/library/cc313105.aspx>
   * [MS-OFFCRYPTO] Agile Encryption <https://msdn.microsoft.com/en-us/library/dd949735(v=office.12).aspx>
+* [MS-OFFDI] Microsoft Office File Format Documentation Introduction <https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offdi/24ed256c-eb5b-494e-b4f6-fb696ad2b4dc>
 * LibreOffice/core <https://github.com/LibreOffice/core>
 * LibreOffice/mso-dumper <https://github.com/LibreOffice/mso-dumper>
 * wvDecrypt <http://www.skynet.ie/~caolan/Packages/wvDecrypt.html>
@@ -174,12 +175,33 @@ If the [cryptography](https://pypi.org/project/cryptography/) package is not ins
 
 ## Use cases and mentions
 
+### General
+
 * <https://repology.org/project/python:msoffcrypto-tool/versions> (kudos to maintainers!)
-* <https://github.com/jbremer/sflock/commit/3f6a96abe1dbb4405e4fb7fd0d16863f634b09fb>
-* <https://github.com/dtjohnson/xlsx-populate>
-* <https://github.com/shombo/cyberstakes-writeps-2018/tree/master/word_up>
-* <https://isc.sans.edu/forums/diary/Video+Analyzing+Encrypted+Malicious+Office+Documents/24572/>
 * <https://checkroth.com/unlocking-password-protected-files.html>
+
+### Malware/maldoc analysis
+
+* <https://github.com/jbremer/sflock/commit/3f6a96abe1dbb4405e4fb7fd0d16863f634b09fb>
+* <https://isc.sans.edu/forums/diary/Video+Analyzing+Encrypted+Malicious+Office+Documents/24572/>
+
+### CTF
+
+* <https://github.com/shombo/cyberstakes-writeps-2018/tree/master/word_up>
+* <https://github.com/willi123yao/Cyberthon2020_Writeups/blob/master/csit/Lost_Magic>
+
+### In other languages
+
+* <https://github.com/dtjohnson/xlsx-populate>
+* <https://github.com/opendocument-app/OpenDocument.core/blob/233663b039/src/internal/ooxml/ooxml_crypto.h>
+* <https://github.com/jaydadhania08/PHPDecryptXLSXWithPassword>
+* <https://github.com/epicentre-msf/rpxl>
+
+### In publications
+
+* [Excel、データ整理＆分析、画像処理の自動化ワザを完全網羅！ 超速Python仕事術大全](https://books.google.co.jp/books?id=TBdVEAAAQBAJ&q=msoffcrypto) (伊沢剛, 2022)
+* ["Analyse de documents malveillants en 2021"](https://twitter.com/decalage2/status/1435255507846053889), MISC Hors-série N° 24, "Reverse engineering : apprenez à analyser des binaires" (Lagadec Philippe, 2021)
+* [シゴトがはかどる Python自動処理の教科書](https://books.google.co.jp/books?id=XEYUEAAAQBAJ&q=msoffcrypto) (クジラ飛行机, 2020)
 
 ## Contributors
 
