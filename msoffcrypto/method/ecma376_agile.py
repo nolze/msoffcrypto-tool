@@ -78,14 +78,18 @@ class ECMA376Agile:
             >>> keyDataSalt = b'\x8f\xc7x"+P\x8d\xdcL\xe6\x8c\xdd\x15<\x16\xb4'
             >>> hashAlgorithm = 'SHA512'
         """
+        # NOTE: See https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/9e61da63-8ddb-4c0a-b25d-f85d990f44c8
         SEGMENT_LENGTH = 4096
         hashCalc = _get_hash_func(hashAlgorithm)
 
         obuf = io.BytesIO()
-        totalSize = unpack("<I", ibuf.read(4))[0]
+
+        # NOTE: See https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/b60c8b35-2db2-4409-8710-59d88a793f83
+        ibuf.seek(0)
+        totalSize = unpack("<Q", ibuf.read(8))
+        totalSize = totalSize[0]
         logger.debug("totalSize: {}".format(totalSize))
         remaining = totalSize
-        ibuf.seek(8)
         for i, buf in enumerate(iter(functools.partial(ibuf.read, SEGMENT_LENGTH), b"")):
             saltWithBlockKey = keyDataSalt + pack("<I", i)
             iv = hashCalc(saltWithBlockKey).digest()
@@ -93,10 +97,14 @@ class ECMA376Agile:
             aes = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
             decryptor = aes.decryptor()
             dec = decryptor.update(buf) + decryptor.finalize()
-            if remaining < len(buf):
+            # TODO: Check
+            if remaining < len(dec):
                 dec = dec[:remaining]
             obuf.write(dec)
-            remaining -= len(buf)
+            remaining -= len(dec)
+            # TODO: Check if this is needed
+            if remaining <= 0:
+                break
         return obuf.getvalue()  # return obuf.getbuffer()
 
     @staticmethod
