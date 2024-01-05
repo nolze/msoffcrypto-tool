@@ -1,4 +1,10 @@
 
+v5.2.0 / 2024-01-06
+===================
+
+  * Support XOR Obfuscation decryption for .xls documents (@DissectMalware, [#80](https://github.com/nolze/msoffcrypto-tool/pull/80)
+  * Bug fixes
+
 v5.1.1 / 2023-07-20
 ===================
 
