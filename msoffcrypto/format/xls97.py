@@ -452,6 +452,10 @@ class Xls97File(base.BaseOfficeFile):
         ...     officefile = Xls97File(f)
         ...     officefile.load_key(password="Password1234_")
 
+        >>> with open("tests/inputs/xor_password_123456789012345.xls", "rb") as f:
+        ...     officefile = Xls97File(f)
+        ...     officefile.load_key(password="123456789012345")
+
         >>> with open("tests/inputs/rc4cryptoapi_password.xls", "rb") as f:
         ...     officefile = Xls97File(f)
         ...     officefile.load_key(password="0000")

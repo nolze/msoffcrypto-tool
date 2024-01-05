@@ -30,12 +30,13 @@ INPUT_DIR = "inputs"
 
 #: pairs of input/output files
 EXAMPLE_FILES = (
-    ("example_password.docx", "example.docx"),
-    ("example_password.xlsx", "example.xlsx"),
-    ("ecma376standard_password.docx", "ecma376standard_password_plain.docx"),
-    ("rc4cryptoapi_password.doc", "rc4cryptoapi_password_plain.doc"),
-    ("rc4cryptoapi_password.xls", "rc4cryptoapi_password_plain.xls"),
-    ("rc4cryptoapi_password.ppt", "rc4cryptoapi_password_plain.ppt"),
+    ("example_password.docx", "example.docx", PASSWORD),
+    ("example_password.xlsx", "example.xlsx", PASSWORD),
+    ("ecma376standard_password.docx", "ecma376standard_password_plain.docx", PASSWORD),
+    ("rc4cryptoapi_password.doc", "rc4cryptoapi_password_plain.doc", PASSWORD),
+    ("rc4cryptoapi_password.xls", "rc4cryptoapi_password_plain.xls", PASSWORD),
+    ("rc4cryptoapi_password.ppt", "rc4cryptoapi_password_plain.ppt", PASSWORD),
+    ("xor_password_123456789012345.xls", "xor_password_123456789012345_plain.xls", "123456789012345"),
 )
 
 #: output dir:
@@ -50,7 +51,7 @@ class KnownOutputCompare(unittest.TestCase):
 
     def test_known_output(self):
         """See module doc."""
-        for in_name, out_name in EXAMPLE_FILES:
+        for in_name, out_name, password in EXAMPLE_FILES:
             input_path = pjoin(TEST_BASE_DIR, INPUT_DIR, in_name)
             expect_path = pjoin(TEST_BASE_DIR, OUTPUT_DIR, out_name)
 
@@ -58,9 +59,9 @@ class KnownOutputCompare(unittest.TestCase):
             with open(input_path, "rb") as input_handle:
                 file = msoffcrypto.OfficeFile(input_handle)
                 if file.format == "ooxml" and file.type in ["standard", "agile"]:
-                    file.load_key(password=PASSWORD, verify_password=True)
+                    file.load_key(password=password, verify_password=True)
                 else:
-                    file.load_key(password=PASSWORD)
+                    file.load_key(password=password)
 
                 out_desc = None
                 out_path = None
