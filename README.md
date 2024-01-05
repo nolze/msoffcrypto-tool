@@ -109,19 +109,19 @@ file.decrypt(open("decrypted.docx", "wb"), verify_integrity=True)
 ### MS-OFFCRYPTO specs
 
 * [x] ECMA-376 (Agile Encryption/Standard Encryption)
-  * [x] MS-DOCX (OOXML) (Word 2007-2016)
-  * [x] MS-XLSX (OOXML) (Excel 2007-2016)
-  * [x] MS-PPTX (OOXML) (PowerPoint 2007-2016)
+  * [x] MS-DOCX (OOXML) (Word 2007-)
+  * [x] MS-XLSX (OOXML) (Excel 2007-)
+  * [x] MS-PPTX (OOXML) (PowerPoint 2007-)
 * [x] Office Binary Document RC4 CryptoAPI
   * [x] MS-DOC (Word 2002, 2003, 2004)
-  * [x] MS-XLS (Excel 2002, 2003, 2004) (experimental)
+  * [x] MS-XLS ([Excel 2002, 2003, 2007, 2010](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-xls/a3ad4e36-ab66-426c-ba91-b84433312068#Appendix_A_22)) (experimental)
   * [x] MS-PPT (PowerPoint 2002, 2003, 2004) (partial, experimental)
 * [x] Office Binary Document RC4
   * [x] MS-DOC (Word 97, 98, 2000)
   * [x] MS-XLS (Excel 97, 98, 2000) (experimental)
 * [ ] ECMA-376 (Extensible Encryption)
 * [x] XOR Obfuscation
-  * [x] MS-XLS (Excel 2002, 2003, 2004?) (experimental)
+  * [x] MS-XLS ([Excel 2002, 2003](https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-xls/a3ad4e36-ab66-426c-ba91-b84433312068#Appendix_A_21)) (experimental)
   * [ ] MS-DOC (Word 2002, 2003, 2004?)
 
 ### Other
