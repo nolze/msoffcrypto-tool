@@ -18,6 +18,7 @@ msoffcrypto-tool (formerly ms-offcrypto-tool) is Python tool and library for dec
 * [Resources](#resources)
 * [Use cases and mentions](#use-cases-and-mentions)
 * [Contributors](#contributors)
+* [Credits](#credits)
 
 ## Installation
 
@@ -206,3 +207,7 @@ poetry run coverage run -m pytest -v
 ## Contributors
 
 * <https://github.com/nolze/msoffcrypto-tool/graphs/contributors>
+
+## Credits
+
+* The sample file for XOR Obfuscation is from: <https://github.com/openwall/john-samples/tree/main/Office/Office_Secrets>
