@@ -120,7 +120,9 @@ file.decrypt(open("decrypted.docx", "wb"), verify_integrity=True)
   * [x] MS-DOC (Word 97, 98, 2000)
   * [x] MS-XLS (Excel 97, 98, 2000) (experimental)
 * [ ] ECMA-376 (Extensible Encryption)
-* [ ] XOR Obfuscation
+* [x] XOR Obfuscation
+  * [x] MS-XLS (Excel 2002, 2003, 2004?) (experimental)
+  * [ ] MS-DOC (Word 2002, 2003, 2004?)
 
 ### Other
 
