@@ -47,11 +47,17 @@ Test if the file is encrypted or not (exit code 0 or 1 is returned):
 msoffcrypto-tool document.doc --test -v
 ```
 
+Encrypt an OOXML file:
+
+```
+msoffcrypto-tool -e -p Passw0rd plain.docx encrypted.docx
+```
+
 ### As library
 
 Password and more key types are supported with library functions.
 
-Basic usage:
+Basic decryption usage:
 
 ```python
 import msoffcrypto
@@ -67,7 +73,7 @@ with open("decrypted.docx", "wb") as f:
 encrypted.close()
 ```
 
-Basic usage (in-memory):
+Basic decryption usage (in-memory):
 
 ```python
 import msoffcrypto
@@ -83,6 +89,35 @@ with open("encrypted.xlsx", "rb") as f:
 
 df = pd.read_excel(decrypted)
 print(df)
+```
+
+Basic encryption usage (only OOXML is supported):
+
+```python
+from msoffcrypto.format.ooxml import OOXMLFile
+
+plain = open("plain.docx", "rb")
+file = OOXMLFile(plain)
+
+with open("encrypted.docx", "wb") as f:
+    file.encrypt("Passw0rd", f)
+
+plain.close()
+```
+
+Basic encryption usage (in-memory, only OOXML is supported):
+
+```python
+from msoffcrypto.format.ooxml import OOXMLFile
+import io
+
+encrypted = io.BytesIO()
+
+with open("plain.xlsx", "rb") as f:
+    file = OOXMLFile(f)
+    file.encrypt("Passw0rd", encrypted)
+
+# Do stuff with encrypted buffer; it contains an OLE container with an encrypted stream
 ```
 
 Advanced usage:
@@ -155,7 +190,8 @@ poetry run coverage run -m pytest -v
 * [x] Improve error types (v4.12.0)
 * [ ] Redesign APIs (v6.0.0)
 * [ ] Introduce something like `ctypes.Structure`
-* [ ] Support encryption
+* [x] Support OOXML encryption
+* [ ] Support other encryption
 * [ ] Isolate parser
 
 ## Resources
@@ -199,6 +235,7 @@ poetry run coverage run -m pytest -v
 * <https://github.com/opendocument-app/OpenDocument.core/blob/233663b039/src/internal/ooxml/ooxml_crypto.h>
 * <https://github.com/jaydadhania08/PHPDecryptXLSXWithPassword>
 * <https://github.com/epicentre-msf/rpxl>
+* <https://github.com/herumi/msoffice>
 
 ### In publications
 

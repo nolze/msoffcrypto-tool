@@ -242,13 +242,11 @@ class OOXMLFile(base.BaseOfficeFile):
 
     def encrypt(self, password, ofile):
         """
-        >>> from msoffcrypto import exceptions
+        >>> from msoffcrypto.format.ooxml import OOXMLFile
         >>> from io import BytesIO; ofile = BytesIO()
-        >>> with open("tests/outputs/ecma376standard_password_plain.docx", "rb") as f:
+        >>> with open("tests/outputs/example.docx", "rb") as f:
         ...     officefile = OOXMLFile(f)
         ...     officefile.encrypt("1234", ofile)
-        Traceback (most recent call last):
-        msoffcrypto.exceptions.EncryptionError: Unable to encrypt this file
         """
         if self.is_encrypted():
             raise exceptions.EncryptionError("File is already encrypted")
