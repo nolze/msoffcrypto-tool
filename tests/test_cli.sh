@@ -2,7 +2,13 @@
 
 set -ev
 
-cd tests
+cd "$(dirname "$0")"
+
+msoffcrypto-tool () {
+    python ../msoffcrypto "$@"
+}
+
+# Decryption
 
 msoffcrypto-tool --test inputs/example_password.docx && : ; [ $? = 0 ]
 msoffcrypto-tool --test outputs/example.docx && : ; [ $? = 1 ]
@@ -33,3 +39,14 @@ msoffcrypto-tool --test inputs/rc4cryptoapi_password.ppt && : ; [ $? = 0 ]
 msoffcrypto-tool --test outputs/rc4cryptoapi_password_plain.ppt && : ; [ $? = 1 ]
 msoffcrypto-tool -p Password1234_ inputs/rc4cryptoapi_password.ppt /tmp/rc4cryptoapi_password_plain.ppt
 diff /tmp/rc4cryptoapi_password_plain.ppt outputs/rc4cryptoapi_password_plain.ppt
+
+# Encryption
+msoffcrypto-tool -e -p Password1234_ outputs/example.docx /tmp/example_password.docx
+msoffcrypto-tool --test /tmp/example_password.docx && : ; [ $? = 0 ]
+msoffcrypto-tool -p Password1234_ /tmp/example_password.docx /tmp/example.docx
+diff /tmp/example.docx outputs/example.docx
+
+msoffcrypto-tool -e -p Password1234_ outputs/example.xlsx /tmp/example_password.xlsx
+msoffcrypto-tool --test /tmp/example_password.xlsx && : ; [ $? = 0 ]
+msoffcrypto-tool -p Password1234_ /tmp/example_password.xlsx /tmp/example.xlsx
+diff /tmp/example.xlsx outputs/example.xlsx

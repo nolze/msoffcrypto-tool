@@ -15,6 +15,10 @@ class DecryptionError(Exception):
     """
     pass
 
+class EncryptionError(Exception):
+    """Raised when the file cannot be encrypted.
+    """
+    pass
 
 class InvalidKeyError(DecryptionError):
     """Raised when the given password or key is incorrect or cannot be verified.
