@@ -54,8 +54,8 @@ parser = argparse.ArgumentParser()
 group = parser.add_mutually_exclusive_group(required=True)
 group.add_argument("-p", "--password", nargs="?", const="", dest="password", help="password text")
 group.add_argument("-t", "--test", dest="test_encrypted", action="store_true", help="test if the file is encrypted")
+parser.add_argument("-e", dest="encrypt", action="store_true", help="encryption mode (default is false)")
 parser.add_argument("-v", dest="verbose", action="store_true", help="print verbose information")
-parser.add_argument("-e", dest="encrypt", action="store_true", help="encryption mode (default is to decrypt)")
 parser.add_argument("infile", nargs="?", type=argparse.FileType("rb"), help="input file")
 parser.add_argument("outfile", nargs="?", type=argparse.FileType("wb"), help="output file (if blank, stdout is used)")
 
@@ -82,16 +82,6 @@ def main():
     else:
         password = getpass.getpass()
 
-    if args.encrypt:
-        # The only format we support for encryption
-        file = OOXMLFile(args.infile)
-    else:
-        if not olefile.isOleFile(args.infile):
-            raise exceptions.FileFormatError("Not OLE file")
-
-        file = OfficeFile(args.infile)
-        file.load_key(password=password)
-
     if args.outfile is None:
         ifWIN32SetBinary(sys.stdout)
         if hasattr(sys.stdout, "buffer"):  # For Python 2
@@ -100,9 +90,19 @@ def main():
             args.outfile = sys.stdout
 
     if args.encrypt:
+        # OOXML is the only format we support for encryption
+        file = OOXMLFile(args.infile)
+
         file.encrypt(password, args.outfile)
     else:
+        if not olefile.isOleFile(args.infile):
+            raise exceptions.FileFormatError("Not OLE file")
+
+        file = OfficeFile(args.infile)
+        file.load_key(password=password)
+
         file.decrypt(args.outfile)
+
 
 if __name__ == "__main__":
     main()

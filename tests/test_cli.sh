@@ -41,6 +41,7 @@ msoffcrypto-tool -p Password1234_ inputs/rc4cryptoapi_password.ppt /tmp/rc4crypt
 diff /tmp/rc4cryptoapi_password_plain.ppt outputs/rc4cryptoapi_password_plain.ppt
 
 # Encryption
+
 msoffcrypto-tool -e -p Password1234_ outputs/example.docx /tmp/example_password.docx
 msoffcrypto-tool --test /tmp/example_password.docx && : ; [ $? = 0 ]
 msoffcrypto-tool -p Password1234_ /tmp/example_password.docx /tmp/example.docx

@@ -1,9 +1,9 @@
+import base64
 import functools
 import hmac
 import io
-import secrets
-import base64
 import logging
+import secrets
 from hashlib import sha1, sha256, sha384, sha512
 from struct import pack, unpack
 
@@ -31,23 +31,29 @@ blkKey_encryptedKeyValue = bytearray([0x14, 0x6E, 0x0B, 0xE7, 0xAB, 0xAC, 0xD0, 
 blkKey_dataIntegrity1 = bytearray([0x5F, 0xB2, 0xAD, 0x01, 0x0C, 0xB9, 0xE1, 0xF6])
 blkKey_dataIntegrity2 = bytearray([0xA0, 0x67, 0x7F, 0x02, 0xB2, 0x2C, 0x84, 0x33])
 
+
 def _random_buffer(sz):
     return secrets.token_bytes(sz)
+
 
 def _get_num_blocks(sz, block):
     return (sz + block - 1) // block
 
+
 def _round_up(sz, block):
     return _get_num_blocks(sz, block) * block
 
-def _resize_buffer(buf, n, c = b'\0'):
-    if len(buf) >= n :
+
+def _resize_buffer(buf, n, c=b"\0"):
+    if len(buf) >= n:
         return buf[:n]
 
     return buf + c * (n - len(buf))
 
+
 def _normalize_key(key, n):
-    return _resize_buffer(key, n, b'\x36')
+    return _resize_buffer(key, n, b"\x36")
+
 
 def _get_hash_func(algorithm):
     return ALGORITHM_HASH.get(algorithm, sha1)
@@ -59,6 +65,7 @@ def _decrypt_aes_cbc(data, key, iv):
     decrypted = decryptor.update(data) + decryptor.finalize()
     return decrypted
 
+
 def _encrypt_aes_cbc(data, key, iv):
     aes = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
 
@@ -66,6 +73,7 @@ def _encrypt_aes_cbc(data, key, iv):
     encrypted = encryptor.update(data) + encryptor.finalize()
 
     return encrypted
+
 
 def _encrypt_aes_cbc_padded(data, key, iv, blockSize):
     buf = data
@@ -75,6 +83,7 @@ def _encrypt_aes_cbc_padded(data, key, iv, blockSize):
 
     return _encrypt_aes_cbc(buf, key, iv)
 
+
 def _get_salt(salt_value=None, salt_size=16):
     if not salt_value is None:
         if len(salt_value) != salt_size:
@@ -83,6 +92,7 @@ def _get_salt(salt_value=None, salt_size=16):
         return salt_value
 
     return _random_buffer(salt_size)
+
 
 # Hardcoded to AES256 + SHA512 for OOXML.
 class ECMA376AgileCipherParams:
@@ -95,8 +105,10 @@ class ECMA376AgileCipherParams:
         self.hashSize = 64
         self.saltValue = None
 
+
 def _enc64(b):
-    return base64.b64encode(b).decode('UTF-8')
+    return base64.b64encode(b).decode("UTF-8")
+
 
 class ECMA376AgileEncryptionInfo:
     def __init__(self):
@@ -118,7 +130,7 @@ class ECMA376AgileEncryptionInfo:
         """
         Returns an XML description of the encryption information.
         """
-        return f'''<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+        return f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <encryption xmlns="http://schemas.microsoft.com/office/2006/encryption" xmlns:p="http://schemas.microsoft.com/office/2006/keyEncryptor/password" xmlns:c="http://schemas.microsoft.com/office/2006/keyEncryptor/certificate">
     <keyData saltSize="{self.keyData.saltSize}" blockSize="{self.keyData.blockSize}" keyBits="{self.keyData.keyBits}" hashSize="{self.keyData.hashSize}"
              cipherAlgorithm="{self.keyData.cipherName}" cipherChaining="ChainingModeCBC" hashAlgorithm="{self.keyData.hashName}" saltValue="{_enc64(self.keyData.saltValue)}" />
@@ -132,7 +144,8 @@ class ECMA376AgileEncryptionInfo:
         </keyEncryptor>
     </keyEncryptors>
 </encryption>
-'''
+"""
+
 
 def _generate_iv(params: ECMA376AgileCipherParams, blkKey, salt_value):
     if not blkKey:
@@ -141,6 +154,7 @@ def _generate_iv(params: ECMA376AgileCipherParams, blkKey, salt_value):
     hashCalc = _get_hash_func(params.hashName)
 
     return _normalize_key(hashCalc(salt_value + blkKey).digest(), params.blockSize)
+
 
 class ECMA376Agile:
     def __init__(self):
@@ -225,17 +239,15 @@ class ECMA376Agile:
 
         When salt_value is not specified (the default), we generate a random one.
         """
-        #
-        # Encryption ported from C++ (https://github.com/herumi/msoffice)
-        #
-        # However, all bugs are my own fault.
-        #
+
+        # Encryption ported from C++ (https://github.com/herumi/msoffice, BSD-3)
+
         info, secret_key = ECMA376Agile.generate_encryption_parameters(key, salt_value, spin_count)
         encrypted_data = ECMA376Agile.encrypt_payload(ibuf, info.encryptedKey, secret_key, info.keyData.saltValue)
         encryption_info = ECMA376Agile.get_encryption_information(info, encrypted_data, secret_key)
 
         obuf = io.BytesIO()
-        ECMA376Encrypted(encrypted_data, encryption_info).writeTo(obuf)
+        ECMA376Encrypted(encrypted_data, encryption_info).write_to(obuf)
 
         return obuf.getvalue()
 
@@ -268,10 +280,14 @@ class ECMA376Agile:
 
         info.encryptedKey.saltValue = _get_salt(salt_value, info.encryptedKey.saltSize)
 
-        h = ECMA376Agile._derive_iterated_hash_from_password(key, info.encryptedKey.saltValue, info.encryptedKey.hashName, info.spinCount).digest()
+        h = ECMA376Agile._derive_iterated_hash_from_password(
+            key, info.encryptedKey.saltValue, info.encryptedKey.hashName, info.spinCount
+        ).digest()
 
         key1 = ECMA376Agile._derive_encryption_key(h, blkKey_VerifierHashInput, info.encryptedKey.hashName, info.encryptedKey.keyBits)
-        key2 = ECMA376Agile._derive_encryption_key(h, blkKey_encryptedVerifierHashValue, info.encryptedKey.hashName, info.encryptedKey.keyBits)
+        key2 = ECMA376Agile._derive_encryption_key(
+            h, blkKey_encryptedVerifierHashValue, info.encryptedKey.hashName, info.encryptedKey.keyBits
+        )
         key3 = ECMA376Agile._derive_encryption_key(h, blkKey_encryptedKeyValue, info.encryptedKey.hashName, info.encryptedKey.keyBits)
 
         verifierHashInput = _random_buffer(info.encryptedKey.saltSize)
@@ -287,7 +303,7 @@ class ECMA376Agile:
         secret_key = _random_buffer(info.encryptedKey.saltSize)
         secret_key = _normalize_key(secret_key, info.encryptedKey.keyBits // 8)
 
-        info.encryptedKeyValue =_encrypt_aes_cbc(secret_key, key3, info.encryptedKey.saltValue)
+        info.encryptedKeyValue = _encrypt_aes_cbc(secret_key, key3, info.encryptedKey.saltValue)
 
         info.keyData.saltValue = _get_salt(salt_size=info.keyData.saltSize)
 
@@ -337,7 +353,7 @@ class ECMA376Agile:
     @staticmethod
     def generate_integrity_parameter(encrypted_data, params: ECMA376AgileCipherParams, secret_key, salt_value):
         """
-            Returns the encrypted HmacKey and HmacValue
+        Returns the encrypted HmacKey and HmacValue.
         """
         salt = _random_buffer(params.hashSize)
 
