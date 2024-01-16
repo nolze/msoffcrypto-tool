@@ -13,7 +13,7 @@ from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 
 from msoffcrypto import exceptions
-from msoffcrypto.method.ecma376_encrypted import ECMA376Encrypted
+from msoffcrypto.method.container.ecma376_encrypted import ECMA376Encrypted
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
