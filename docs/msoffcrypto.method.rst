@@ -1,6 +1,14 @@
 msoffcrypto.method package
 ==========================
 
+Subpackages
+-----------
+
+.. toctree::
+   :maxdepth: 1
+
+   msoffcrypto.method.container
+
 Submodules
 ----------
 
