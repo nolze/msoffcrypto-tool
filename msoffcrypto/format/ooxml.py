@@ -240,6 +240,26 @@ class OOXMLFile(base.BaseOfficeFile):
         if not zipfile.is_zipfile(io.BytesIO(obuf)):
             raise exceptions.InvalidKeyError("The file could not be decrypted with this password")
 
+    def encrypt(self, password, ofile):
+        """
+        >>> from msoffcrypto.format.ooxml import OOXMLFile
+        >>> from io import BytesIO; ofile = BytesIO()
+        >>> with open("tests/outputs/example.docx", "rb") as f:
+        ...     officefile = OOXMLFile(f)
+        ...     officefile.encrypt("1234", ofile)
+        """
+        if self.is_encrypted():
+            raise exceptions.EncryptionError("File is already encrypted")
+
+        self.file.seek(0)
+
+        buf = ECMA376Agile.encrypt(password, self.file)
+
+        if not olefile.isOleFile(buf):
+            raise exceptions.EncryptionError("Unable to encrypt this file")
+
+        ofile.write(buf)
+
     def is_encrypted(self):
         """
         >>> with open("tests/inputs/example_password.docx", "rb") as f:

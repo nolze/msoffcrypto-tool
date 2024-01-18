@@ -30,6 +30,10 @@ pip install msoffcrypto-tool
 
 ### As CLI tool (with password)
 
+#### Decryption
+
+Specify the password with `-p` flag:
+
 ```
 msoffcrypto-tool encrypted.docx decrypted.docx -p Passw0rd
 ```
@@ -41,15 +45,30 @@ $ msoffcrypto-tool encrypted.docx decrypted.docx -p
 Password:
 ```
 
-Test if the file is encrypted or not (exit code 0 or 1 is returned):
+To check if the file is encrypted or not, use `-t` flag:
 
 ```
 msoffcrypto-tool document.doc --test -v
 ```
 
+It returns `1` if the file is encrypted, `0` if not.
+
+#### Encryption (OOXML only, experimental)
+
+> [!IMPORTANT]
+> Encryption feature is experimental. Please use it at your own risk.
+
+To password-protect a document, use `-e` flag along with `-p` flag:
+
+```
+msoffcrypto-tool -e -p Passw0rd plain.docx encrypted.docx
+```
+
 ### As library
 
 Password and more key types are supported with library functions.
+
+#### Decryption
 
 Basic usage:
 
@@ -67,7 +86,7 @@ with open("decrypted.docx", "wb") as f:
 encrypted.close()
 ```
 
-Basic usage (in-memory):
+In-memory:
 
 ```python
 import msoffcrypto
@@ -102,6 +121,40 @@ file.load_key(secret_key=binascii.unhexlify("AE8C36E68B4BB9EA46E5544A5FDB6693875
 # Check the HMAC of the data payload before decryption (default: False)
 # Currently, the verify_integrity option is only meaningful for ECMA-376 Agile Encryption
 file.decrypt(open("decrypted.docx", "wb"), verify_integrity=True)
+```
+
+#### Encryption (OOXML only, experimental)
+
+> [!IMPORTANT]
+> Encryption feature is experimental. Please use it at your own risk.
+
+Basic usage:
+
+```python
+from msoffcrypto.format.ooxml import OOXMLFile
+
+plain = open("plain.docx", "rb")
+file = OOXMLFile(plain)
+
+with open("encrypted.docx", "wb") as f:
+    file.encrypt("Passw0rd", f)
+
+plain.close()
+```
+
+In-memory:
+
+```python
+from msoffcrypto.format.ooxml import OOXMLFile
+import io
+
+encrypted = io.BytesIO()
+
+with open("plain.xlsx", "rb") as f:
+    file = OOXMLFile(f)
+    file.encrypt("Passw0rd", encrypted)
+
+# Do stuff with encrypted buffer; it contains an OLE container with an encrypted stream
 ```
 
 ## Supported encryption methods
@@ -155,7 +208,8 @@ poetry run coverage run -m pytest -v
 * [x] Improve error types (v4.12.0)
 * [ ] Redesign APIs (v6.0.0)
 * [ ] Introduce something like `ctypes.Structure`
-* [ ] Support encryption
+* [x] Support OOXML encryption
+* [ ] Support other encryption
 * [ ] Isolate parser
 
 ## Resources

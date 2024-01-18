@@ -1,7 +1,9 @@
+import base64
 import functools
 import hmac
 import io
 import logging
+import secrets
 from hashlib import sha1, sha256, sha384, sha512
 from struct import pack, unpack
 
@@ -9,6 +11,9 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import padding
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+
+from msoffcrypto import exceptions
+from msoffcrypto.method.container.ecma376_encrypted import ECMA376Encrypted
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -20,6 +25,35 @@ ALGORITHM_HASH = {
     "SHA512": sha512,
 }
 
+blkKey_VerifierHashInput = bytearray([0xFE, 0xA7, 0xD2, 0x76, 0x3B, 0x4B, 0x9E, 0x79])
+blkKey_encryptedVerifierHashValue = bytearray([0xD7, 0xAA, 0x0F, 0x6D, 0x30, 0x61, 0x34, 0x4E])
+blkKey_encryptedKeyValue = bytearray([0x14, 0x6E, 0x0B, 0xE7, 0xAB, 0xAC, 0xD0, 0xD6])
+blkKey_dataIntegrity1 = bytearray([0x5F, 0xB2, 0xAD, 0x01, 0x0C, 0xB9, 0xE1, 0xF6])
+blkKey_dataIntegrity2 = bytearray([0xA0, 0x67, 0x7F, 0x02, 0xB2, 0x2C, 0x84, 0x33])
+
+
+def _random_buffer(sz):
+    return secrets.token_bytes(sz)
+
+
+def _get_num_blocks(sz, block):
+    return (sz + block - 1) // block
+
+
+def _round_up(sz, block):
+    return _get_num_blocks(sz, block) * block
+
+
+def _resize_buffer(buf, n, c=b"\0"):
+    if len(buf) >= n:
+        return buf[:n]
+
+    return buf + c * (n - len(buf))
+
+
+def _normalize_key(key, n):
+    return _resize_buffer(key, n, b"\x36")
+
 
 def _get_hash_func(algorithm):
     return ALGORITHM_HASH.get(algorithm, sha1)
@@ -30,6 +64,96 @@ def _decrypt_aes_cbc(data, key, iv):
     decryptor = aes.decryptor()
     decrypted = decryptor.update(data) + decryptor.finalize()
     return decrypted
+
+
+def _encrypt_aes_cbc(data, key, iv):
+    aes = Cipher(algorithms.AES(key), modes.CBC(iv), backend=default_backend())
+
+    encryptor = aes.encryptor()
+    encrypted = encryptor.update(data) + encryptor.finalize()
+
+    return encrypted
+
+
+def _encrypt_aes_cbc_padded(data, key, iv, blockSize):
+    buf = data
+
+    if len(buf) % blockSize:
+        buf = _resize_buffer(buf, _round_up(len(buf), blockSize))
+
+    return _encrypt_aes_cbc(buf, key, iv)
+
+
+def _get_salt(salt_value=None, salt_size=16):
+    if not salt_value is None:
+        if len(salt_value) != salt_size:
+            raise exceptions.EncryptionError(f"Invalid salt value size, should be {salt_size}")
+
+        return salt_value
+
+    return _random_buffer(salt_size)
+
+
+# Hardcoded to AES256 + SHA512 for OOXML.
+class ECMA376AgileCipherParams:
+    def __init__(self):
+        self.cipherName = "AES"
+        self.hashName = "SHA512"
+        self.saltSize = 16
+        self.blockSize = 16
+        self.keyBits = 256
+        self.hashSize = 64
+        self.saltValue = None
+
+
+def _enc64(b):
+    return base64.b64encode(b).decode("UTF-8")
+
+
+class ECMA376AgileEncryptionInfo:
+    def __init__(self):
+        self.spinCount = 100000
+        self.keyData = ECMA376AgileCipherParams()
+        self.encryptedHmacKey = None
+        self.encryptedHmacValue = None
+
+        self.encryptedKey = ECMA376AgileCipherParams()
+        self.encryptedVerifierHashInput = None
+        self.encryptedVerifierHashValue = None
+        self.encryptedKeyValue = None
+
+    def getEncryptionDescriptorHeader(self):
+        # https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/87020a34-e73f-4139-99bc-bbdf6cf6fa55
+        return pack("<HHI", 4, 4, 0x40)
+
+    def toEncryptionDescriptor(self):
+        """
+        Returns an XML description of the encryption information.
+        """
+        return f"""<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<encryption xmlns="http://schemas.microsoft.com/office/2006/encryption" xmlns:p="http://schemas.microsoft.com/office/2006/keyEncryptor/password" xmlns:c="http://schemas.microsoft.com/office/2006/keyEncryptor/certificate">
+    <keyData saltSize="{self.keyData.saltSize}" blockSize="{self.keyData.blockSize}" keyBits="{self.keyData.keyBits}" hashSize="{self.keyData.hashSize}"
+             cipherAlgorithm="{self.keyData.cipherName}" cipherChaining="ChainingModeCBC" hashAlgorithm="{self.keyData.hashName}" saltValue="{_enc64(self.keyData.saltValue)}" />
+    <dataIntegrity encryptedHmacKey="{_enc64(self.encryptedHmacKey)}" encryptedHmacValue="{_enc64(self.encryptedHmacValue)}" />
+    <keyEncryptors>
+        <keyEncryptor uri="http://schemas.microsoft.com/office/2006/keyEncryptor/password">
+            <p:encryptedKey spinCount="{self.spinCount}" saltSize="{self.encryptedKey.saltSize}" blockSize="{self.encryptedKey.blockSize}" keyBits="{self.encryptedKey.keyBits}"
+                            hashSize="{self.encryptedKey.hashSize}" cipherAlgorithm="{self.encryptedKey.cipherName}" cipherChaining="ChainingModeCBC" hashAlgorithm="{self.encryptedKey.hashName}"
+                            saltValue="{_enc64(self.encryptedKey.saltValue)}" encryptedVerifierHashInput="{_enc64(self.encryptedVerifierHashInput)}"
+                            encryptedVerifierHashValue="{_enc64(self.encryptedVerifierHashValue)}" encryptedKeyValue="{_enc64(self.encryptedKeyValue)}" />
+        </keyEncryptor>
+    </keyEncryptors>
+</encryption>
+"""
+
+
+def _generate_iv(params: ECMA376AgileCipherParams, blkKey, salt_value):
+    if not blkKey:
+        return _normalize_key(salt_value, params.blockSize)
+
+    hashCalc = _get_hash_func(params.hashName)
+
+    return _normalize_key(hashCalc(salt_value + blkKey).digest(), params.blockSize)
 
 
 class ECMA376Agile:
@@ -109,6 +233,143 @@ class ECMA376Agile:
         return obuf.getvalue()  # return obuf.getbuffer()
 
     @staticmethod
+    def encrypt(key, ibuf, salt_value=None, spin_count=100000):
+        """
+        Return an OLE compound file buffer (complete with headers) which contains ibuf encrypted into a single stream.
+
+        When salt_value is not specified (the default), we generate a random one.
+        """
+
+        # Encryption ported from C++ (https://github.com/herumi/msoffice, BSD-3)
+
+        info, secret_key = ECMA376Agile.generate_encryption_parameters(key, salt_value, spin_count)
+        encrypted_data = ECMA376Agile.encrypt_payload(ibuf, info.encryptedKey, secret_key, info.keyData.saltValue)
+        encryption_info = ECMA376Agile.get_encryption_information(info, encrypted_data, secret_key)
+
+        obuf = io.BytesIO()
+        ECMA376Encrypted(encrypted_data, encryption_info).write_to(obuf)
+
+        return obuf.getvalue()
+
+    @staticmethod
+    def get_encryption_information(info: ECMA376AgileEncryptionInfo, encrypted_data, secretKey):
+        """
+        Return the content of an EncryptionInfo Stream, including the short header, per the specifications at
+
+        https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/87020a34-e73f-4139-99bc-bbdf6cf6fa55
+        """
+        hmacKey, hmacValue = ECMA376Agile.generate_integrity_parameter(encrypted_data, info.keyData, secretKey, info.keyData.saltValue)
+
+        info.encryptedHmacKey = hmacKey
+        info.encryptedHmacValue = hmacValue
+
+        xml_descriptor = info.toEncryptionDescriptor().encode("UTF-8")
+        header_descriptor = info.getEncryptionDescriptorHeader()
+
+        return header_descriptor + xml_descriptor
+
+    @staticmethod
+    def generate_encryption_parameters(key, salt_value=None, spin_count=100000):
+        """
+        Generates encryption parameters used to encrypt a payload.
+
+        Returns the information + a secret key.
+        """
+        info = ECMA376AgileEncryptionInfo()
+        info.spinCount = spin_count
+
+        info.encryptedKey.saltValue = _get_salt(salt_value, info.encryptedKey.saltSize)
+
+        h = ECMA376Agile._derive_iterated_hash_from_password(
+            key, info.encryptedKey.saltValue, info.encryptedKey.hashName, info.spinCount
+        ).digest()
+
+        key1 = ECMA376Agile._derive_encryption_key(h, blkKey_VerifierHashInput, info.encryptedKey.hashName, info.encryptedKey.keyBits)
+        key2 = ECMA376Agile._derive_encryption_key(
+            h, blkKey_encryptedVerifierHashValue, info.encryptedKey.hashName, info.encryptedKey.keyBits
+        )
+        key3 = ECMA376Agile._derive_encryption_key(h, blkKey_encryptedKeyValue, info.encryptedKey.hashName, info.encryptedKey.keyBits)
+
+        verifierHashInput = _random_buffer(info.encryptedKey.saltSize)
+        verifierHashInput = _resize_buffer(verifierHashInput, _round_up(len(verifierHashInput), info.encryptedKey.blockSize))
+
+        info.encryptedVerifierHashInput = _encrypt_aes_cbc(verifierHashInput, key1, info.encryptedKey.saltValue)
+
+        hashedVerifier = _get_hash_func(info.encryptedKey.hashName)(verifierHashInput).digest()
+        hashedVerifier = _resize_buffer(hashedVerifier, _round_up(len(hashedVerifier), info.encryptedKey.blockSize))
+
+        info.encryptedVerifierHashValue = _encrypt_aes_cbc(hashedVerifier, key2, info.encryptedKey.saltValue)
+
+        secret_key = _random_buffer(info.encryptedKey.saltSize)
+        secret_key = _normalize_key(secret_key, info.encryptedKey.keyBits // 8)
+
+        info.encryptedKeyValue = _encrypt_aes_cbc(secret_key, key3, info.encryptedKey.saltValue)
+
+        info.keyData.saltValue = _get_salt(salt_size=info.keyData.saltSize)
+
+        return info, secret_key
+
+    @staticmethod
+    def encrypt_payload(ibuf, params: ECMA376AgileCipherParams, secret_key, salt_value):
+        """
+        Encrypts a payload using the params and secrets passed in.
+
+        Returns the encrypted data as a byte array.
+        """
+        # Specifications calls for storing the original (unpadded) size as a 64 bit little-endian
+        # number at the start of the buffer. We'll loop while there's data, and come back at the
+        # end to update the total size, instead of seeking to the end of ibuf to get the size,
+        # just in case ibuf is a streaming buffer...
+        total_size = 0
+        obuf = io.BytesIO()
+        obuf.write(pack("<Q", total_size))
+
+        hashCalc = _get_hash_func(params.hashName)
+        SEGMENT_LENGTH = 4096
+
+        i = 0
+        while True:
+            buf = ibuf.read(SEGMENT_LENGTH)
+            if not buf:
+                break
+
+            iv = _normalize_key(hashCalc(salt_value + pack("<I", i)).digest(), params.saltSize)
+
+            # Per the specifications, we need to make sure the last chunk is padded to our
+            # block size
+            enc = _encrypt_aes_cbc_padded(buf, secret_key, iv, params.blockSize)
+
+            obuf.write(enc)
+            total_size += len(buf)
+
+            i += 1
+
+        # Update size in the header
+        obuf.seek(0)
+        obuf.write(pack("<Q", total_size))
+
+        return obuf.getvalue()
+
+    @staticmethod
+    def generate_integrity_parameter(encrypted_data, params: ECMA376AgileCipherParams, secret_key, salt_value):
+        """
+        Returns the encrypted HmacKey and HmacValue.
+        """
+        salt = _random_buffer(params.hashSize)
+
+        iv1 = _generate_iv(params, blkKey_dataIntegrity1, salt_value)
+        iv2 = _generate_iv(params, blkKey_dataIntegrity2, salt_value)
+
+        encryptedHmacKey = _encrypt_aes_cbc(salt, secret_key, iv1)
+
+        msg_hmac = hmac.new(salt, encrypted_data, _get_hash_func(params.hashName))
+        hmacValue = msg_hmac.digest()
+
+        encryptedHmacValue = _encrypt_aes_cbc(hmacValue, secret_key, iv2)
+
+        return encryptedHmacKey, encryptedHmacValue
+
+    @staticmethod
     def verify_password(password, saltValue, hashAlgorithm, encryptedVerifierHashInput, encryptedVerifierHashValue, spinValue, keyBits):
         r"""
         Return True if the given password is valid.
@@ -126,13 +387,10 @@ class ECMA376Agile:
         """
         # NOTE: See https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/a57cb947-554f-4e5e-b150-3f2978225e92
 
-        block1 = bytearray([0xFE, 0xA7, 0xD2, 0x76, 0x3B, 0x4B, 0x9E, 0x79])
-        block2 = bytearray([0xD7, 0xAA, 0x0F, 0x6D, 0x30, 0x61, 0x34, 0x4E])
-
         h = ECMA376Agile._derive_iterated_hash_from_password(password, saltValue, hashAlgorithm, spinValue)
 
-        key1 = ECMA376Agile._derive_encryption_key(h.digest(), block1, hashAlgorithm, keyBits)
-        key2 = ECMA376Agile._derive_encryption_key(h.digest(), block2, hashAlgorithm, keyBits)
+        key1 = ECMA376Agile._derive_encryption_key(h.digest(), blkKey_VerifierHashInput, hashAlgorithm, keyBits)
+        key2 = ECMA376Agile._derive_encryption_key(h.digest(), blkKey_encryptedVerifierHashValue, hashAlgorithm, keyBits)
 
         hash_input = _decrypt_aes_cbc(encryptedVerifierHashInput, key1, saltValue)
         hashCalc = _get_hash_func(hashAlgorithm)
@@ -150,14 +408,11 @@ class ECMA376Agile:
         """
         # NOTE: See https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/63d9c262-82b9-4fa3-a06d-d087b93e3b00
 
-        block4 = bytearray([0x5F, 0xB2, 0xAD, 0x01, 0x0C, 0xB9, 0xE1, 0xF6])
-        block5 = bytearray([0xA0, 0x67, 0x7F, 0x02, 0xB2, 0x2C, 0x84, 0x33])
-
         hashCalc = _get_hash_func(keyDataHashAlgorithm)
 
-        iv1 = hashCalc(keyDataSalt + block4).digest()
+        iv1 = hashCalc(keyDataSalt + blkKey_dataIntegrity1).digest()
         iv1 = iv1[:keyDataBlockSize]
-        iv2 = hashCalc(keyDataSalt + block5).digest()
+        iv2 = hashCalc(keyDataSalt + blkKey_dataIntegrity2).digest()
         iv2 = iv2[:keyDataBlockSize]
 
         hmacKey = _decrypt_aes_cbc(encryptedHmacKey, secretKey, iv1)
@@ -190,10 +445,9 @@ class ECMA376Agile:
             >>> ECMA376Agile.makekey_from_password(password, saltValue, hashAlgorithm, encryptedKeyValue, spinValue, keyBits) == expected
             True
         """
-        block3 = bytearray([0x14, 0x6E, 0x0B, 0xE7, 0xAB, 0xAC, 0xD0, 0xD6])
 
         h = ECMA376Agile._derive_iterated_hash_from_password(password, saltValue, hashAlgorithm, spinValue)
-        encryption_key = ECMA376Agile._derive_encryption_key(h.digest(), block3, hashAlgorithm, keyBits)
+        encryption_key = ECMA376Agile._derive_encryption_key(h.digest(), blkKey_encryptedKeyValue, hashAlgorithm, keyBits)
 
         skey = _decrypt_aes_cbc(encryptedKeyValue, encryption_key, saltValue)
 
