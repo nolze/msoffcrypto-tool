@@ -6,7 +6,7 @@
 [![Coverage Status](https://codecov.io/gh/nolze/msoffcrypto-tool/branch/master/graph/badge.svg)](https://codecov.io/gh/nolze/msoffcrypto-tool)
 [![Documentation Status](https://readthedocs.org/projects/msoffcrypto-tool/badge/?version=latest)](http://msoffcrypto-tool.readthedocs.io/en/latest/?badge=latest)
 
-msoffcrypto-tool (formerly ms-offcrypto-tool) is Python tool and library for decrypting encrypted MS Office files with password, intermediate key, or private key which generated its escrow key.
+msoffcrypto-tool is a Python tool and library for decrypting and encrypting MS Office files using a password or other keys.
 
 ## Contents
 
@@ -123,6 +123,14 @@ file.load_key(secret_key=binascii.unhexlify("AE8C36E68B4BB9EA46E5544A5FDB6693875
 file.decrypt(open("decrypted.docx", "wb"), verify_integrity=True)
 ```
 
+Supported key types are
+
+- Passwords
+- Intermediate keys (optional)
+- Private keys used for generating escrow keys (escrow certificates) (optional)
+
+See also ["Backdooring MS Office documents with secret master keys"](https://web.archive.org/web/20171008075059/http://secuinside.com/archive/2015/2015-1-9.pdf) for more information on the key types.
+
 #### Encryption (OOXML only, experimental)
 
 > [!IMPORTANT]
@@ -155,6 +163,7 @@ with open("plain.xlsx", "rb") as f:
     file.encrypt("Passw0rd", encrypted)
 
 # Do stuff with encrypted buffer; it contains an OLE container with an encrypted stream
+...
 ```
 
 ## Supported encryption methods
@@ -206,15 +215,16 @@ poetry run coverage run -m pytest -v
 * [x] Integrate with more comprehensive projects handling MS Office files (such as [oletools](https://github.com/decalage2/oletools/)?) if possible
 * [x] Add the password prompt mode for CLI
 * [x] Improve error types (v4.12.0)
-* [ ] Redesign APIs (v6.0.0)
+* [ ] Add type hints
 * [ ] Introduce something like `ctypes.Structure`
 * [x] Support OOXML encryption
 * [ ] Support other encryption
 * [ ] Isolate parser
+* [ ] Redesign APIs (v6.0.0)
 
 ## Resources
 
-* "Backdooring MS Office documents with secret master keys" <http://secuinside.com/archive/2015/2015-1-9.pdf>
+* "Backdooring MS Office documents with secret master keys" [http://secuinside.com/archive/2015/2015-1-9.pdf](https://web.archive.org/web/20171008075059/http://secuinside.com/archive/2015/2015-1-9.pdf)
 * Technical Documents <https://msdn.microsoft.com/en-us/library/cc313105.aspx>
   * [MS-OFFCRYPTO] Agile Encryption <https://msdn.microsoft.com/en-us/library/dd949735(v=office.12).aspx>
 * [MS-OFFDI] Microsoft Office File Format Documentation Introduction <https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offdi/24ed256c-eb5b-494e-b4f6-fb696ad2b4dc>
