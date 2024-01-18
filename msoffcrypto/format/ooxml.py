@@ -118,16 +118,25 @@ class OOXMLFile(base.BaseOfficeFile):
 
     def __init__(self, file):
         self.format = "ooxml"
+
         file.seek(0)  # TODO: Investigate the effect (required for olefile.isOleFile)
+
         # olefile cannot process non password protected ooxml files.
         # TODO: this code is duplicate of OfficeFile(). Merge?
         if olefile.isOleFile(file):
             ole = olefile.OleFileIO(file)
             self.file = ole
-            with self.file.openstream("EncryptionInfo") as stream:
-                self.type, self.info = _parseinfo(stream)
+
+            try:
+                with self.file.openstream("EncryptionInfo") as stream:
+                    self.type, self.info = _parseinfo(stream)
+            except IOError:
+                raise exceptions.FileFormatError("Supposed to be an encrypted OOXML file, but no EncryptionInfo stream found")
+
             logger.debug("OOXMLFile.type: {}".format(self.type))
+
             self.secret_key = None
+
             if self.type == "agile":
                 # TODO: Support aliases?
                 self.keyTypes = ("password", "private_key", "secret_key")

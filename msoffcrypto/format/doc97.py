@@ -352,6 +352,8 @@ class Doc97File(base.BaseOfficeFile):
                             raise exceptions.InvalidKeyError("Failed to verify password")
                     else:
                         raise exceptions.DecryptionError("Unsupported encryption method")
+        else:
+            raise exceptions.DecryptionError("File is not encrypted")
 
     def decrypt(self, ofile):
         # fd, _ofile_path = tempfile.mkstemp()

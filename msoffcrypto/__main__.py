@@ -8,7 +8,7 @@ import sys
 import olefile
 
 from msoffcrypto import OfficeFile, exceptions
-from msoffcrypto.format.ooxml import OOXMLFile
+from msoffcrypto.format.ooxml import OOXMLFile, _is_ooxml
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -90,13 +90,16 @@ def main():
             args.outfile = sys.stdout
 
     if args.encrypt:
+        if not _is_ooxml(args.infile):
+            raise exceptions.FileFormatError("Not an OOXML file")
+
         # OOXML is the only format we support for encryption
         file = OOXMLFile(args.infile)
 
         file.encrypt(password, args.outfile)
     else:
         if not olefile.isOleFile(args.infile):
-            raise exceptions.FileFormatError("Not OLE file")
+            raise exceptions.FileFormatError("Not an OLE file")
 
         file = OfficeFile(args.infile)
         file.load_key(password=password)
