@@ -1,4 +1,9 @@
 
+v5.3.0 / 2024-01-19
+===================
+
+  * Add support for OOXML encryption, a port from the C++ library https://github.com/herumi/msoffice (@stephane-rouleau, [#86](https://github.com/nolze/msoffcrypto-tool/pull/86))
+
 v5.2.0 / 2024-01-06
 ===================
 
