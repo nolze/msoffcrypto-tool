@@ -6,7 +6,7 @@ license = "MIT"
 homepage = "https://github.com/nolze/msoffcrypto-tool"
 authors = ["nolze <nolze@int3.net>"]
 readme = "README.md"
-packages = [{ include = "msoffcrypto" }]
+packages = [{ include = "msoffcrypto" }, { include = "NOTICE.txt" }]
 
 [tool.poetry.dependencies]
 python = "^3.8"
