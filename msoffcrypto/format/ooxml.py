@@ -98,6 +98,7 @@ def _parseinfo(ole):
         return "standard", _parseinfo_standard(ole)
     elif versionMajor in [3, 4] and versionMinor == 3:  # Extensible
         raise exceptions.DecryptionError("Unsupported EncryptionInfo version (Extensible Encryption)")
+    raise exceptions.DecryptionError("Unsupported EncryptionInfo version ({}:{})".format(versionMajor, versionMinor))
 
 
 class OOXMLFile(base.BaseOfficeFile):
