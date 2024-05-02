@@ -1,4 +1,9 @@
 
+v5.4.0 / 2024-05-02
+===================
+
+  * Never return None in ooxml's _parseinfo (@gdesmar, [#88](https://github.com/nolze/msoffcrypto-tool/pull/88))
+
 v5.3.1 / 2024-01-19
 ===================
 
