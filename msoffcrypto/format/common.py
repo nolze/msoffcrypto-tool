@@ -13,6 +13,7 @@ def _parse_encryptionheader(blob):
     (algId,) = unpack("<I", blob.read(4))
     (algIdHash,) = unpack("<I", blob.read(4))
     (keySize,) = unpack("<I", blob.read(4))
+    keySize = 40 if keySize == 0 else keySize
     (providerType,) = unpack("<I", blob.read(4))
     (reserved1,) = unpack("<I", blob.read(4))
     (reserved2,) = unpack("<I", blob.read(4))
