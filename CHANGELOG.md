@@ -1,8 +1,13 @@
 
+v5.4.1 / 2024-05-25
+===================
+
+  * Fix for incorrect key size with 0 length keySize var (@UserJHansen, [#89](https://github.com/nolze/msoffcrypto-tool/pull/89))
+
 v5.4.0 / 2024-05-02
 ===================
 
-  * Never return None in ooxml's _parseinfo (@gdesmar, [#88](https://github.com/nolze/msoffcrypto-tool/pull/88))
+  * Never return None in ooxml's \_parseinfo (@gdesmar, [#88](https://github.com/nolze/msoffcrypto-tool/pull/88))
 
 v5.3.1 / 2024-01-19
 ===================
