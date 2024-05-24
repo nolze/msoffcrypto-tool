@@ -9,7 +9,7 @@ import olefile
 
 from msoffcrypto import exceptions
 from msoffcrypto.format import base
-from msoffcrypto.format.common import _parse_encryptionheader, _parse_encryptionverifier
+from msoffcrypto.format.common import _parse_header_RC4CryptoAPI
 from msoffcrypto.method.rc4_cryptoapi import DocumentRC4CryptoAPI
 
 logger = logging.getLogger(__name__)
@@ -500,25 +500,6 @@ def construct_persistobjectdirectory(data):
                 persistobjectdirectory[entry.persistId + i] = offset
 
     return persistobjectdirectory
-
-
-def _parse_header_RC4CryptoAPI(encryptionInfo):
-    flags = encryptionInfo.read(4)
-    (headerSize,) = unpack("<I", encryptionInfo.read(4))
-    logger.debug(headerSize)
-    blob = io.BytesIO(encryptionInfo.read(headerSize))
-    header = _parse_encryptionheader(blob)
-    logger.debug(header)
-    blob = io.BytesIO(encryptionInfo.read())
-    verifier = _parse_encryptionverifier(blob, "RC4")  # TODO: Fix (cf. ooxml.py)
-    logger.debug(verifier)
-    info = {
-        "salt": verifier["salt"],
-        "keySize": header["keySize"],
-        "encryptedVerifier": verifier["encryptedVerifier"],
-        "encryptedVerifierHash": verifier["encryptedVerifierHash"],
-    }
-    return info
 
 
 class Ppt97File(base.BaseOfficeFile):

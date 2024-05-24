@@ -1,3 +1,4 @@
+import io
 import logging
 from struct import unpack
 
@@ -49,3 +50,25 @@ def _parse_encryptionverifier(blob, algorithm):
         "encryptedVerifierHash": encryptedVerifierHash,
     }
     return verifier
+
+
+def _parse_header_RC4CryptoAPI(encryptionHeader):
+    flags = encryptionHeader.read(4)
+    (headerSize,) = unpack("<I", encryptionHeader.read(4))
+    logger.debug(headerSize)
+    blob = io.BytesIO(encryptionHeader.read(headerSize))
+    header = _parse_encryptionheader(blob)
+    logger.debug(header)
+    # NOTE: https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/36cfb17f-9b15-4a9b-911a-f401f60b3991
+    keySize = 0x00000028 if header["keySize"] == 0 else header["keySize"]
+
+    blob = io.BytesIO(encryptionHeader.read())
+    verifier = _parse_encryptionverifier(blob, "RC4")  # TODO: Fix (cf. ooxml.py)
+    logger.debug(verifier)
+    info = {
+        "salt": verifier["salt"],
+        "keySize": keySize,
+        "encryptedVerifier": verifier["encryptedVerifier"],
+        "encryptedVerifierHash": verifier["encryptedVerifierHash"],
+    }
+    return info

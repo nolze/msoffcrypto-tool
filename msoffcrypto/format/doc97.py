@@ -9,7 +9,7 @@ import olefile
 
 from msoffcrypto import exceptions
 from msoffcrypto.format import base
-from msoffcrypto.format.common import _parse_encryptionheader, _parse_encryptionverifier
+from msoffcrypto.format.common import _parse_header_RC4CryptoAPI
 from msoffcrypto.method.rc4 import DocumentRC4
 from msoffcrypto.method.rc4_cryptoapi import DocumentRC4CryptoAPI
 
@@ -254,25 +254,6 @@ def _parse_header_RC4(encryptionHeader):
         "salt": salt,
         "encryptedVerifier": encryptedVerifier,
         "encryptedVerifierHash": encryptedVerifierHash,
-    }
-    return info
-
-
-def _parse_header_RC4CryptoAPI(encryptionHeader):
-    flags = encryptionHeader.read(4)
-    (headerSize,) = unpack("<I", encryptionHeader.read(4))
-    logger.debug(headerSize)
-    blob = io.BytesIO(encryptionHeader.read(headerSize))
-    header = _parse_encryptionheader(blob)
-    logger.debug(header)
-    blob = io.BytesIO(encryptionHeader.read())
-    verifier = _parse_encryptionverifier(blob, "RC4")  # TODO: Fix (cf. ooxml.py)
-    logger.debug(verifier)
-    info = {
-        "salt": verifier["salt"],
-        "keySize": header["keySize"],
-        "encryptedVerifier": verifier["encryptedVerifier"],
-        "encryptedVerifierHash": verifier["encryptedVerifierHash"],
     }
     return info
 
