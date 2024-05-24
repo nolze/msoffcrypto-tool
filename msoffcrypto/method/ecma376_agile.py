@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import base64
 import functools
 import hmac
@@ -26,7 +28,9 @@ ALGORITHM_HASH = {
 }
 
 blkKey_VerifierHashInput = bytearray([0xFE, 0xA7, 0xD2, 0x76, 0x3B, 0x4B, 0x9E, 0x79])
-blkKey_encryptedVerifierHashValue = bytearray([0xD7, 0xAA, 0x0F, 0x6D, 0x30, 0x61, 0x34, 0x4E])
+blkKey_encryptedVerifierHashValue = bytearray(
+    [0xD7, 0xAA, 0x0F, 0x6D, 0x30, 0x61, 0x34, 0x4E]
+)
 blkKey_encryptedKeyValue = bytearray([0x14, 0x6E, 0x0B, 0xE7, 0xAB, 0xAC, 0xD0, 0xD6])
 blkKey_dataIntegrity1 = bytearray([0x5F, 0xB2, 0xAD, 0x01, 0x0C, 0xB9, 0xE1, 0xF6])
 blkKey_dataIntegrity2 = bytearray([0xA0, 0x67, 0x7F, 0x02, 0xB2, 0x2C, 0x84, 0x33])
@@ -85,9 +89,11 @@ def _encrypt_aes_cbc_padded(data, key, iv, blockSize):
 
 
 def _get_salt(salt_value=None, salt_size=16):
-    if not salt_value is None:
+    if salt_value is not None:
         if len(salt_value) != salt_size:
-            raise exceptions.EncryptionError(f"Invalid salt value size, should be {salt_size}")
+            raise exceptions.EncryptionError(
+                f"Invalid salt value size, should be {salt_size}"
+            )
 
         return salt_value
 
@@ -103,7 +109,7 @@ class ECMA376AgileCipherParams:
         self.blockSize = 16
         self.keyBits = 256
         self.hashSize = 64
-        self.saltValue = None
+        self.saltValue: bytes | None = None
 
 
 def _enc64(b):
@@ -114,13 +120,13 @@ class ECMA376AgileEncryptionInfo:
     def __init__(self):
         self.spinCount = 100000
         self.keyData = ECMA376AgileCipherParams()
-        self.encryptedHmacKey = None
-        self.encryptedHmacValue = None
+        self.encryptedHmacKey: bytes | None = None
+        self.encryptedHmacValue: bytes | None = None
 
         self.encryptedKey = ECMA376AgileCipherParams()
-        self.encryptedVerifierHashInput = None
-        self.encryptedVerifierHashValue = None
-        self.encryptedKeyValue = None
+        self.encryptedVerifierHashInput: bytes | None = None
+        self.encryptedVerifierHashValue: bytes | None = None
+        self.encryptedKeyValue: bytes | None = None
 
     def getEncryptionDescriptorHeader(self):
         # https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/87020a34-e73f-4139-99bc-bbdf6cf6fa55
@@ -161,7 +167,9 @@ class ECMA376Agile:
         pass
 
     @staticmethod
-    def _derive_iterated_hash_from_password(password, saltValue, hashAlgorithm, spinValue):
+    def _derive_iterated_hash_from_password(
+        password, saltValue, hashAlgorithm, spinValue
+    ):
         r"""
         Do a partial password-based hash derivation.
         Note the block key is not taken into consideration in this function.
@@ -215,7 +223,9 @@ class ECMA376Agile:
         totalSize = totalSize[0]
         logger.debug("totalSize: {}".format(totalSize))
         remaining = totalSize
-        for i, buf in enumerate(iter(functools.partial(ibuf.read, SEGMENT_LENGTH), b"")):
+        for i, buf in enumerate(
+            iter(functools.partial(ibuf.read, SEGMENT_LENGTH), b"")
+        ):
             saltWithBlockKey = keyDataSalt + pack("<I", i)
             iv = hashCalc(saltWithBlockKey).digest()
             iv = iv[:16]
@@ -242,9 +252,15 @@ class ECMA376Agile:
 
         # Encryption ported from C++ (https://github.com/herumi/msoffice, BSD-3)
 
-        info, secret_key = ECMA376Agile.generate_encryption_parameters(key, salt_value, spin_count)
-        encrypted_data = ECMA376Agile.encrypt_payload(ibuf, info.encryptedKey, secret_key, info.keyData.saltValue)
-        encryption_info = ECMA376Agile.get_encryption_information(info, encrypted_data, secret_key)
+        info, secret_key = ECMA376Agile.generate_encryption_parameters(
+            key, salt_value, spin_count
+        )
+        encrypted_data = ECMA376Agile.encrypt_payload(
+            ibuf, info.encryptedKey, secret_key, info.keyData.saltValue
+        )
+        encryption_info = ECMA376Agile.get_encryption_information(
+            info, encrypted_data, secret_key
+        )
 
         obuf = io.BytesIO()
         ECMA376Encrypted(encrypted_data, encryption_info).write_to(obuf)
@@ -252,13 +268,17 @@ class ECMA376Agile:
         return obuf.getvalue()
 
     @staticmethod
-    def get_encryption_information(info: ECMA376AgileEncryptionInfo, encrypted_data, secretKey):
+    def get_encryption_information(
+        info: ECMA376AgileEncryptionInfo, encrypted_data, secretKey
+    ):
         """
         Return the content of an EncryptionInfo Stream, including the short header, per the specifications at
 
         https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/87020a34-e73f-4139-99bc-bbdf6cf6fa55
         """
-        hmacKey, hmacValue = ECMA376Agile.generate_integrity_parameter(encrypted_data, info.keyData, secretKey, info.keyData.saltValue)
+        hmacKey, hmacValue = ECMA376Agile.generate_integrity_parameter(
+            encrypted_data, info.keyData, secretKey, info.keyData.saltValue
+        )
 
         info.encryptedHmacKey = hmacKey
         info.encryptedHmacValue = hmacValue
@@ -284,26 +304,52 @@ class ECMA376Agile:
             key, info.encryptedKey.saltValue, info.encryptedKey.hashName, info.spinCount
         ).digest()
 
-        key1 = ECMA376Agile._derive_encryption_key(h, blkKey_VerifierHashInput, info.encryptedKey.hashName, info.encryptedKey.keyBits)
-        key2 = ECMA376Agile._derive_encryption_key(
-            h, blkKey_encryptedVerifierHashValue, info.encryptedKey.hashName, info.encryptedKey.keyBits
+        key1 = ECMA376Agile._derive_encryption_key(
+            h,
+            blkKey_VerifierHashInput,
+            info.encryptedKey.hashName,
+            info.encryptedKey.keyBits,
         )
-        key3 = ECMA376Agile._derive_encryption_key(h, blkKey_encryptedKeyValue, info.encryptedKey.hashName, info.encryptedKey.keyBits)
+        key2 = ECMA376Agile._derive_encryption_key(
+            h,
+            blkKey_encryptedVerifierHashValue,
+            info.encryptedKey.hashName,
+            info.encryptedKey.keyBits,
+        )
+        key3 = ECMA376Agile._derive_encryption_key(
+            h,
+            blkKey_encryptedKeyValue,
+            info.encryptedKey.hashName,
+            info.encryptedKey.keyBits,
+        )
 
         verifierHashInput = _random_buffer(info.encryptedKey.saltSize)
-        verifierHashInput = _resize_buffer(verifierHashInput, _round_up(len(verifierHashInput), info.encryptedKey.blockSize))
+        verifierHashInput = _resize_buffer(
+            verifierHashInput,
+            _round_up(len(verifierHashInput), info.encryptedKey.blockSize),
+        )
 
-        info.encryptedVerifierHashInput = _encrypt_aes_cbc(verifierHashInput, key1, info.encryptedKey.saltValue)
+        info.encryptedVerifierHashInput = _encrypt_aes_cbc(
+            verifierHashInput, key1, info.encryptedKey.saltValue
+        )
 
-        hashedVerifier = _get_hash_func(info.encryptedKey.hashName)(verifierHashInput).digest()
-        hashedVerifier = _resize_buffer(hashedVerifier, _round_up(len(hashedVerifier), info.encryptedKey.blockSize))
+        hashedVerifier = _get_hash_func(info.encryptedKey.hashName)(
+            verifierHashInput
+        ).digest()
+        hashedVerifier = _resize_buffer(
+            hashedVerifier, _round_up(len(hashedVerifier), info.encryptedKey.blockSize)
+        )
 
-        info.encryptedVerifierHashValue = _encrypt_aes_cbc(hashedVerifier, key2, info.encryptedKey.saltValue)
+        info.encryptedVerifierHashValue = _encrypt_aes_cbc(
+            hashedVerifier, key2, info.encryptedKey.saltValue
+        )
 
         secret_key = _random_buffer(info.encryptedKey.saltSize)
         secret_key = _normalize_key(secret_key, info.encryptedKey.keyBits // 8)
 
-        info.encryptedKeyValue = _encrypt_aes_cbc(secret_key, key3, info.encryptedKey.saltValue)
+        info.encryptedKeyValue = _encrypt_aes_cbc(
+            secret_key, key3, info.encryptedKey.saltValue
+        )
 
         info.keyData.saltValue = _get_salt(salt_size=info.keyData.saltSize)
 
@@ -333,7 +379,9 @@ class ECMA376Agile:
             if not buf:
                 break
 
-            iv = _normalize_key(hashCalc(salt_value + pack("<I", i)).digest(), params.saltSize)
+            iv = _normalize_key(
+                hashCalc(salt_value + pack("<I", i)).digest(), params.saltSize
+            )
 
             # Per the specifications, we need to make sure the last chunk is padded to our
             # block size
@@ -351,7 +399,9 @@ class ECMA376Agile:
         return obuf.getvalue()
 
     @staticmethod
-    def generate_integrity_parameter(encrypted_data, params: ECMA376AgileCipherParams, secret_key, salt_value):
+    def generate_integrity_parameter(
+        encrypted_data, params: ECMA376AgileCipherParams, secret_key, salt_value
+    ):
         """
         Returns the encrypted HmacKey and HmacValue.
         """
@@ -370,7 +420,15 @@ class ECMA376Agile:
         return encryptedHmacKey, encryptedHmacValue
 
     @staticmethod
-    def verify_password(password, saltValue, hashAlgorithm, encryptedVerifierHashInput, encryptedVerifierHashValue, spinValue, keyBits):
+    def verify_password(
+        password,
+        saltValue,
+        hashAlgorithm,
+        encryptedVerifierHashInput,
+        encryptedVerifierHashValue,
+        spinValue,
+        keyBits,
+    ):
         r"""
         Return True if the given password is valid.
 
@@ -387,10 +445,16 @@ class ECMA376Agile:
         """
         # NOTE: See https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/a57cb947-554f-4e5e-b150-3f2978225e92
 
-        h = ECMA376Agile._derive_iterated_hash_from_password(password, saltValue, hashAlgorithm, spinValue)
+        h = ECMA376Agile._derive_iterated_hash_from_password(
+            password, saltValue, hashAlgorithm, spinValue
+        )
 
-        key1 = ECMA376Agile._derive_encryption_key(h.digest(), blkKey_VerifierHashInput, hashAlgorithm, keyBits)
-        key2 = ECMA376Agile._derive_encryption_key(h.digest(), blkKey_encryptedVerifierHashValue, hashAlgorithm, keyBits)
+        key1 = ECMA376Agile._derive_encryption_key(
+            h.digest(), blkKey_VerifierHashInput, hashAlgorithm, keyBits
+        )
+        key2 = ECMA376Agile._derive_encryption_key(
+            h.digest(), blkKey_encryptedVerifierHashValue, hashAlgorithm, keyBits
+        )
 
         hash_input = _decrypt_aes_cbc(encryptedVerifierHashInput, key1, saltValue)
         hashCalc = _get_hash_func(hashAlgorithm)
@@ -402,7 +466,15 @@ class ECMA376Agile:
         return acutal_hash == expected_hash
 
     @staticmethod
-    def verify_integrity(secretKey, keyDataSalt, keyDataHashAlgorithm, keyDataBlockSize, encryptedHmacKey, encryptedHmacValue, stream):
+    def verify_integrity(
+        secretKey,
+        keyDataSalt,
+        keyDataHashAlgorithm,
+        keyDataBlockSize,
+        encryptedHmacKey,
+        encryptedHmacValue,
+        stream,
+    ):
         r"""
         Return True if the HMAC of the data payload is valid.
         """
@@ -426,12 +498,16 @@ class ECMA376Agile:
 
     @staticmethod
     def makekey_from_privkey(privkey, encryptedKeyValue):
-        privkey = serialization.load_pem_private_key(privkey.read(), password=None, backend=default_backend())
+        privkey = serialization.load_pem_private_key(
+            privkey.read(), password=None, backend=default_backend()
+        )
         skey = privkey.decrypt(encryptedKeyValue, padding.PKCS1v15())
         return skey
 
     @staticmethod
-    def makekey_from_password(password, saltValue, hashAlgorithm, encryptedKeyValue, spinValue, keyBits):
+    def makekey_from_password(
+        password, saltValue, hashAlgorithm, encryptedKeyValue, spinValue, keyBits
+    ):
         r"""
         Generate intermediate key from given password.
 
@@ -446,8 +522,12 @@ class ECMA376Agile:
             True
         """
 
-        h = ECMA376Agile._derive_iterated_hash_from_password(password, saltValue, hashAlgorithm, spinValue)
-        encryption_key = ECMA376Agile._derive_encryption_key(h.digest(), blkKey_encryptedKeyValue, hashAlgorithm, keyBits)
+        h = ECMA376Agile._derive_iterated_hash_from_password(
+            password, saltValue, hashAlgorithm, spinValue
+        )
+        encryption_key = ECMA376Agile._derive_encryption_key(
+            h.digest(), blkKey_encryptedKeyValue, hashAlgorithm, keyBits
+        )
 
         skey = _decrypt_aes_cbc(encryptedKeyValue, encryption_key, saltValue)
 

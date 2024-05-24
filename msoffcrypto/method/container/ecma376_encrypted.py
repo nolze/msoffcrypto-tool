@@ -182,13 +182,28 @@ class DirectoryEntry:
         Write 128 bytes header in the output buffer. The Name property needs to be converted to UTF-16; Content is _not_
         written out by this method.
         """
-        name16 = self.Name.encode("UTF-16-LE")  # Write in Little Endian; omit the BOM at the start of the output
+        name16 = self.Name.encode(
+            "UTF-16-LE"
+        )  # Write in Little Endian; omit the BOM at the start of the output
         directoryNameSize = len(name16) + 2  # Count the null terminator in the size
 
-        obuf.write(name16 + b"\0" * 2)  # Specs calls for us to store the null-terminator
-        obuf.write(b"\0" * (64 - directoryNameSize))  # Pad name to 64 bytes (thus max 31 chars + \x00\x00)
+        obuf.write(
+            name16 + b"\0" * 2
+        )  # Specs calls for us to store the null-terminator
+        obuf.write(
+            b"\0" * (64 - directoryNameSize)
+        )  # Pad name to 64 bytes (thus max 31 chars + \x00\x00)
         obuf.write(pack("<H", directoryNameSize if directoryNameSize > 2 else 0))
-        obuf.write(pack("<BBIII", self.Type, self.Color, self.LeftSiblingId, self.RightSiblingId, self.ChildId))
+        obuf.write(
+            pack(
+                "<BBIII",
+                self.Type,
+                self.Color,
+                self.LeftSiblingId,
+                self.RightSiblingId,
+                self.ChildId,
+            )
+        )
 
         if self.CLSID:
             obuf.write(self.CLSID)
@@ -294,11 +309,12 @@ class ECMA376EncryptedLayout:
 
     @property
     def contentSectorNum(self):
-        return self.numMiniFatSectors + self.directoryEntrySectorNum + self.miniFatDataSectorNum + self.encryptionPackageSectorNum
-
-    @property
-    def miniFatDataPos(self):
-        return self.directoryEntryPos + self.directoryEntrySectorNum
+        return (
+            self.numMiniFatSectors
+            + self.directoryEntrySectorNum
+            + self.miniFatDataSectorNum
+            + self.encryptionPackageSectorNum
+        )
 
     @property
     def encryptionPackagePos(self):
@@ -370,10 +386,37 @@ class ECMA376Encrypted:
         ft = datetime2filetime(datetime.now())
 
         directories = [  # Must follow DSPos ordering
-            DirectoryEntry("Root Entry", DirectoryEntryType.ROOT_STORAGE, RedBlack.RED, ct=ft, mt=ft, childId=DSPos.iEncryptionInfo),
-            DirectoryEntry("EncryptedPackage", DirectoryEntryType.STREAM, RedBlack.RED, ct=ft, mt=ft),
-            DirectoryEntry("\x06DataSpaces", DirectoryEntryType.STORAGE, RedBlack.RED, ct=ft, mt=ft, childId=DSPos.iDataSpaceMap),
-            DirectoryEntry("Version", DirectoryEntryType.STREAM, RedBlack.BLACK, ct=ft, mt=ft, content=DefaultContent.Version),
+            DirectoryEntry(
+                "Root Entry",
+                DirectoryEntryType.ROOT_STORAGE,
+                RedBlack.RED,
+                ct=ft,
+                mt=ft,
+                childId=DSPos.iEncryptionInfo,
+            ),
+            DirectoryEntry(
+                "EncryptedPackage",
+                DirectoryEntryType.STREAM,
+                RedBlack.RED,
+                ct=ft,
+                mt=ft,
+            ),
+            DirectoryEntry(
+                "\x06DataSpaces",
+                DirectoryEntryType.STORAGE,
+                RedBlack.RED,
+                ct=ft,
+                mt=ft,
+                childId=DSPos.iDataSpaceMap,
+            ),
+            DirectoryEntry(
+                "Version",
+                DirectoryEntryType.STREAM,
+                RedBlack.BLACK,
+                ct=ft,
+                mt=ft,
+                content=DefaultContent.Version,
+            ),
             DirectoryEntry(
                 "DataSpaceMap",
                 DirectoryEntryType.STREAM,
@@ -402,10 +445,29 @@ class ECMA376Encrypted:
                 content=DefaultContent.StrongEncryptionDataSpace,
             ),
             DirectoryEntry(
-                "TransformInfo", DirectoryEntryType.STORAGE, RedBlack.RED, ct=ft, mt=ft, childId=DSPos.iStrongEncryptionTransform
+                "TransformInfo",
+                DirectoryEntryType.STORAGE,
+                RedBlack.RED,
+                ct=ft,
+                mt=ft,
+                childId=DSPos.iStrongEncryptionTransform,
             ),
-            DirectoryEntry("StrongEncryptionTransform", DirectoryEntryType.STORAGE, RedBlack.BLACK, ct=ft, mt=ft, childId=DSPos.iPrimary),
-            DirectoryEntry("\x06Primary", DirectoryEntryType.STREAM, RedBlack.BLACK, ct=ft, mt=ft, content=DefaultContent.Primary),
+            DirectoryEntry(
+                "StrongEncryptionTransform",
+                DirectoryEntryType.STORAGE,
+                RedBlack.BLACK,
+                ct=ft,
+                mt=ft,
+                childId=DSPos.iPrimary,
+            ),
+            DirectoryEntry(
+                "\x06Primary",
+                DirectoryEntryType.STREAM,
+                RedBlack.BLACK,
+                ct=ft,
+                mt=ft,
+                content=DefaultContent.Primary,
+            ),
             DirectoryEntry(
                 "EncryptionInfo",
                 DirectoryEntryType.STREAM,
@@ -431,7 +493,9 @@ class ECMA376Encrypted:
 
         self._dirs[DSPos.iRoot].StartingSectorLocation = layout.miniFatDataPos
         self._dirs[DSPos.iRoot].Content = b"\0" * (64 * layout.miniFatNum)
-        self._dirs[DSPos.iEncryptionPackage].StartingSectorLocation = layout.encryptionPackagePos
+        self._dirs[
+            DSPos.iEncryptionPackage
+        ].StartingSectorLocation = layout.encryptionPackagePos
 
         for i in range(min(layout.fatSectorNum, Header.FIRSTNUMDIFAT)):
             self._header.difat.append(layout.fatPos + i)
@@ -464,7 +528,9 @@ class ECMA376Encrypted:
 
         if obuf.tell() != (layout.offsetDirectoryEntries + len(self._dirs) * 128):
             # TODO: Use appropriate custom exception
-            raise Exception("Buffer did not advance as expected when writing out directory entries")
+            raise Exception(
+                "Buffer did not advance as expected when writing out directory entries"
+            )
 
     def _write_Content(self, obuf, layout: ECMA376EncryptedLayout):
         for d in self._dirs:
@@ -479,15 +545,24 @@ class ECMA376Encrypted:
                     obuf.write(d.Content)
 
     def _write_FAT_start(self, obuf, layout: ECMA376EncryptedLayout):
-        v = ([SectorTypes.DIFSECT] * layout.difatSectorNum) + ([SectorTypes.FATSECT] * layout.fatSectorNum)
-        v += [layout.numMiniFatSectors, layout.directoryEntrySectorNum, layout.miniFatDataSectorNum, layout.encryptionPackageSectorNum]
+        v = ([SectorTypes.DIFSECT] * layout.difatSectorNum) + (
+            [SectorTypes.FATSECT] * layout.fatSectorNum
+        )
+        v += [
+            layout.numMiniFatSectors,
+            layout.directoryEntrySectorNum,
+            layout.miniFatDataSectorNum,
+            layout.encryptionPackageSectorNum,
+        ]
 
         obuf.seek(layout.offsetFat)
         self._write_FAT(obuf, v, layout.fatSectorNum * layout.sectorSize)
 
     def _write_MiniFAT(self, obuf, layout: ECMA376EncryptedLayout):
         obuf.seek(layout.offsetMiniFat)
-        self._write_FAT(obuf, layout.miniFatSectors, layout.numMiniFatSectors * layout.sectorSize)
+        self._write_FAT(
+            obuf, layout.miniFatSectors, layout.numMiniFatSectors * layout.sectorSize
+        )
 
     def _write_FAT(self, obuf, entries, blockSize):
         v = 0
@@ -556,8 +631,14 @@ class ECMA376Encrypted:
         fatSectorNum = 0
 
         for i in range(10):
-            a = self._get_block_num(difatSectorNum + fatSectorNum + layout.contentSectorNum, numInFat)
-            b = 0 if a <= Header.FIRSTNUMDIFAT else self._get_block_num(a - Header.FIRSTNUMDIFAT, numInFat - 1)
+            a = self._get_block_num(
+                difatSectorNum + fatSectorNum + layout.contentSectorNum, numInFat
+            )
+            b = (
+                0
+                if a <= Header.FIRSTNUMDIFAT
+                else self._get_block_num(a - Header.FIRSTNUMDIFAT, numInFat - 1)
+            )
 
             if (b == difatSectorNum) and (a == fatSectorNum):
                 layout.fatSectorNum = fatSectorNum
@@ -568,11 +649,19 @@ class ECMA376Encrypted:
             difatSectorNum = b
             fatSectorNum = a
 
-        raise IndexError("Unable to detect sector number within a reasonsable amount of loops")
+        raise IndexError(
+            "Unable to detect sector number within a reasonsable amount of loops"
+        )
 
     def _set_sector_locations_of_streams(self, layout: ECMA376EncryptedLayout):
         # Use all streams, except the encrypted package which is special (and the main reason why we're doing all this!)
-        streamsOfInterest = list(filter(lambda d: d.Type == DirectoryEntryType.STREAM and d.Name != "EncryptedPackage", self._dirs))
+        streamsOfInterest = list(
+            filter(
+                lambda d: d.Type == DirectoryEntryType.STREAM
+                and d.Name != "EncryptedPackage",
+                self._dirs,
+            )
+        )
 
         miniFatSectors = []
         miniFatNum = 0
@@ -588,7 +677,9 @@ class ECMA376Encrypted:
             pos += n
 
         miniFatNum = pos
-        miniFatDataSectorNum = self._get_block_num(miniFatNum, (self._header.sectorSize // 64))
+        miniFatDataSectorNum = self._get_block_num(
+            miniFatNum, (self._header.sectorSize // 64)
+        )
 
         if self._get_block_num(miniFatDataSectorNum, 128) > 1:
             raise ValueError("Unexpected layout size; too large")
@@ -598,7 +689,9 @@ class ECMA376Encrypted:
         layout.miniFatSectors = miniFatSectors
 
         layout.directoryEntrySectorNum = self._get_block_num(len(self._dirs), 4)
-        layout.encryptionPackageSectorNum = self._get_block_num(len(self._dirs[DSPos.iEncryptionPackage].Content), layout.sectorSize)
+        layout.encryptionPackageSectorNum = self._get_block_num(
+            len(self._dirs[DSPos.iEncryptionPackage].Content), layout.sectorSize
+        )
 
     def _get_MiniFAT_sector_number(self, size):
         return self._get_block_num(size, 64)

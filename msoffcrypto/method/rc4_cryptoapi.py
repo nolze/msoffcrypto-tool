@@ -32,7 +32,15 @@ class DocumentRC4CryptoAPI:
         pass
 
     @staticmethod
-    def verifypw(password, salt, keySize, encryptedVerifier, encryptedVerifierHash, algId=0x00006801, block=0):
+    def verifypw(
+        password,
+        salt,
+        keySize,
+        encryptedVerifier,
+        encryptedVerifierHash,
+        algId=0x00006801,
+        block=0,
+    ):
         r"""
         Return True if the given password is valid.
         """

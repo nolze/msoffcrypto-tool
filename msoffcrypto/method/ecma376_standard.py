@@ -54,7 +54,9 @@ class ECMA376Standard:
         return expected_hash == verifierHash
 
     @staticmethod
-    def makekey_from_password(password, algId, algIdHash, providerType, keySize, saltSize, salt):
+    def makekey_from_password(
+        password, algId, algIdHash, providerType, keySize, saltSize, salt
+    ):
         r"""
         Generate intermediate key from given password.
 
@@ -69,8 +71,20 @@ class ECMA376Standard:
             >>> ECMA376Standard.makekey_from_password(password, algId, algIdHash, providerType, keySize, saltSize, salt) == expected
             True
         """
-        logger.debug([password, hex(algId), hex(algIdHash), hex(providerType), keySize, saltSize, salt])
-        xor_bytes = lambda a, b: bytearray([p ^ q for p, q in zip(bytearray(a), bytearray(b))])  # bytearray() for Python 2 compat.
+        logger.debug(
+            [
+                password,
+                hex(algId),
+                hex(algIdHash),
+                hex(providerType),
+                keySize,
+                saltSize,
+                salt,
+            ]
+        )
+        xor_bytes = lambda a, b: bytearray(
+            [p ^ q for p, q in zip(bytearray(a), bytearray(b))]
+        )  # bytearray() for Python 2 compat.
 
         # https://msdn.microsoft.com/en-us/library/dd925430(v=office.12).aspx
         ITER_COUNT = 50000
