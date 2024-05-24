@@ -423,12 +423,18 @@ class Doc97File(base.BaseOfficeFile):
                 dec1 = DocumentRC4CryptoAPI.decrypt(
                     self.key, self.salt, self.keySize, worddocument
                 )
+            else:
+                raise exceptions.DecryptionError(
+                    "Unsupported encryption method: {}".format(self.type)
+                )
+
             dec1.seek(FIB_LENGTH)
             obuf1.write(dec1.read())
             obuf1.seek(0)
 
         # TODO: Preserve header
         obuf2 = io.BytesIO()
+
         if self.type == "rc4":
             with self.ole.openstream(self.info.tablename) as stream:
                 dec2 = DocumentRC4.decrypt(self.key, self.salt, stream)
@@ -437,6 +443,11 @@ class Doc97File(base.BaseOfficeFile):
                 dec2 = DocumentRC4CryptoAPI.decrypt(
                     self.key, self.salt, self.keySize, stream
                 )
+        else:
+            raise exceptions.DecryptionError(
+                "Unsupported encryption method: {}".format(self.type)
+            )
+
         obuf2.write(dec2.read())
         obuf2.seek(0)
 
@@ -451,6 +462,10 @@ class Doc97File(base.BaseOfficeFile):
                     dec3 = DocumentRC4CryptoAPI.decrypt(
                         self.key, self.salt, self.keySize, data_stream
                     )
+            else:
+                raise exceptions.DecryptionError(
+                    "Unsupported encryption method: {}".format(self.type)
+                )
             obuf3.write(dec3.read())
             obuf3.seek(0)
 

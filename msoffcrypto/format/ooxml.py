@@ -27,12 +27,13 @@ def _is_ooxml(file):
             # Heuristic
             if (
                 xml.documentElement.tagName == "Types"
-                and xml.documentElement.namespaceURI == "http://schemas.openxmlformats.org/package/2006/content-types"
+                and xml.documentElement.namespaceURI
+                == "http://schemas.openxmlformats.org/package/2006/content-types"
             ):
                 return True
             else:
                 return False
-    except:
+    except Exception:
         return False
 
 
@@ -49,7 +50,9 @@ def _parseinfo_standard(ole):
         0x0000660F: "AES-192",
         0x00006610: "AES-256",
     }
-    verifier = _parse_encryptionverifier(blob, "AES" if header["algId"] & 0xFF00 == 0x6600 else "RC4")  # TODO: Fix
+    verifier = _parse_encryptionverifier(
+        blob, "AES" if header["algId"] & 0xFF00 == 0x6600 else "RC4"
+    )  # TODO: Fix
     info = {
         "header": header,
         "verifier": verifier,
@@ -60,16 +63,34 @@ def _parseinfo_standard(ole):
 def _parseinfo_agile(ole):
     ole.seek(8)
     xml = parseString(ole.read())
-    keyDataSalt = base64.b64decode(xml.getElementsByTagName("keyData")[0].getAttribute("saltValue"))
-    keyDataHashAlgorithm = xml.getElementsByTagName("keyData")[0].getAttribute("hashAlgorithm")
-    keyDataBlockSize = int(xml.getElementsByTagName("keyData")[0].getAttribute("blockSize"))
-    encryptedHmacKey = base64.b64decode(xml.getElementsByTagName("dataIntegrity")[0].getAttribute("encryptedHmacKey"))
-    encryptedHmacValue = base64.b64decode(xml.getElementsByTagName("dataIntegrity")[0].getAttribute("encryptedHmacValue"))
-    password_node = xml.getElementsByTagNameNS("http://schemas.microsoft.com/office/2006/keyEncryptor/password", "encryptedKey")[0]
+    keyDataSalt = base64.b64decode(
+        xml.getElementsByTagName("keyData")[0].getAttribute("saltValue")
+    )
+    keyDataHashAlgorithm = xml.getElementsByTagName("keyData")[0].getAttribute(
+        "hashAlgorithm"
+    )
+    keyDataBlockSize = int(
+        xml.getElementsByTagName("keyData")[0].getAttribute("blockSize")
+    )
+    encryptedHmacKey = base64.b64decode(
+        xml.getElementsByTagName("dataIntegrity")[0].getAttribute("encryptedHmacKey")
+    )
+    encryptedHmacValue = base64.b64decode(
+        xml.getElementsByTagName("dataIntegrity")[0].getAttribute("encryptedHmacValue")
+    )
+    password_node = xml.getElementsByTagNameNS(
+        "http://schemas.microsoft.com/office/2006/keyEncryptor/password", "encryptedKey"
+    )[0]
     spinValue = int(password_node.getAttribute("spinCount"))
-    encryptedKeyValue = base64.b64decode(password_node.getAttribute("encryptedKeyValue"))
-    encryptedVerifierHashInput = base64.b64decode(password_node.getAttribute("encryptedVerifierHashInput"))
-    encryptedVerifierHashValue = base64.b64decode(password_node.getAttribute("encryptedVerifierHashValue"))
+    encryptedKeyValue = base64.b64decode(
+        password_node.getAttribute("encryptedKeyValue")
+    )
+    encryptedVerifierHashInput = base64.b64decode(
+        password_node.getAttribute("encryptedVerifierHashInput")
+    )
+    encryptedVerifierHashValue = base64.b64decode(
+        password_node.getAttribute("encryptedVerifierHashValue")
+    )
     passwordSalt = base64.b64decode(password_node.getAttribute("saltValue"))
     passwordHashAlgorithm = password_node.getAttribute("hashAlgorithm")
     passwordKeyBits = int(password_node.getAttribute("keyBits"))
@@ -97,8 +118,12 @@ def _parseinfo(ole):
     elif versionMajor in [2, 3, 4] and versionMinor == 2:  # Standard
         return "standard", _parseinfo_standard(ole)
     elif versionMajor in [3, 4] and versionMinor == 3:  # Extensible
-        raise exceptions.DecryptionError("Unsupported EncryptionInfo version (Extensible Encryption)")
-    raise exceptions.DecryptionError("Unsupported EncryptionInfo version ({}:{})".format(versionMajor, versionMinor))
+        raise exceptions.DecryptionError(
+            "Unsupported EncryptionInfo version (Extensible Encryption)"
+        )
+    raise exceptions.DecryptionError(
+        "Unsupported EncryptionInfo version ({}:{})".format(versionMajor, versionMinor)
+    )
 
 
 class OOXMLFile(base.BaseOfficeFile):
@@ -132,7 +157,9 @@ class OOXMLFile(base.BaseOfficeFile):
                 with self.file.openstream("EncryptionInfo") as stream:
                     self.type, self.info = _parseinfo(stream)
             except IOError:
-                raise exceptions.FileFormatError("Supposed to be an encrypted OOXML file, but no EncryptionInfo stream found")
+                raise exceptions.FileFormatError(
+                    "Supposed to be an encrypted OOXML file, but no EncryptionInfo stream found"
+                )
 
             logger.debug("OOXMLFile.type: {}".format(self.type))
 
@@ -151,7 +178,9 @@ class OOXMLFile(base.BaseOfficeFile):
         else:
             raise exceptions.FileFormatError("Unsupported file format")
 
-    def load_key(self, password=None, private_key=None, secret_key=None, verify_password=False):
+    def load_key(
+        self, password=None, private_key=None, secret_key=None, verify_password=False
+    ):
         """
         >>> with open("tests/outputs/ecma376standard_password_plain.docx", "rb") as f:
         ...     officefile = OOXMLFile(f)
@@ -191,7 +220,9 @@ class OOXMLFile(base.BaseOfficeFile):
                 )
                 if verify_password:
                     verified = ECMA376Standard.verifykey(
-                        self.secret_key, self.info["verifier"]["encryptedVerifier"], self.info["verifier"]["encryptedVerifierHash"]
+                        self.secret_key,
+                        self.info["verifier"]["encryptedVerifier"],
+                        self.info["verifier"]["encryptedVerifierHash"],
                     )
                     if not verified:
                         raise exceptions.InvalidKeyError("Key verification failed")
@@ -201,22 +232,26 @@ class OOXMLFile(base.BaseOfficeFile):
                 pass
         elif private_key:
             if self.type == "agile":
-                self.secret_key = ECMA376Agile.makekey_from_privkey(private_key, self.info["encryptedKeyValue"])
+                self.secret_key = ECMA376Agile.makekey_from_privkey(
+                    private_key, self.info["encryptedKeyValue"]
+                )
             else:
-                raise exceptions.DecryptionError("Unsupported key type for the encryption method")
+                raise exceptions.DecryptionError(
+                    "Unsupported key type for the encryption method"
+                )
         elif secret_key:
             self.secret_key = secret_key
         else:
             raise exceptions.DecryptionError("No key specified")
 
-    def decrypt(self, ofile, verify_integrity=False):
+    def decrypt(self, outfile, verify_integrity=False):
         """
         >>> from msoffcrypto import exceptions
-        >>> from io import BytesIO; ofile = BytesIO()
+        >>> from io import BytesIO; outfile = BytesIO()
         >>> with open("tests/outputs/ecma376standard_password_plain.docx", "rb") as f:
         ...     officefile = OOXMLFile(f)
         ...     officefile.load_key("1234")
-        ...     officefile.decrypt(ofile)
+        ...     officefile.decrypt(outfile)
         Traceback (most recent call last):
         msoffcrypto.exceptions.DecryptionError: Unencrypted document
         """
@@ -233,14 +268,21 @@ class OOXMLFile(base.BaseOfficeFile):
                         stream,
                     )
                     if not verified:
-                        raise exceptions.InvalidKeyError("Payload integrity verification failed")
+                        raise exceptions.InvalidKeyError(
+                            "Payload integrity verification failed"
+                        )
 
-                obuf = ECMA376Agile.decrypt(self.secret_key, self.info["keyDataSalt"], self.info["keyDataHashAlgorithm"], stream)
-            ofile.write(obuf)
+                obuf = ECMA376Agile.decrypt(
+                    self.secret_key,
+                    self.info["keyDataSalt"],
+                    self.info["keyDataHashAlgorithm"],
+                    stream,
+                )
+            outfile.write(obuf)
         elif self.type == "standard":
             with self.file.openstream("EncryptedPackage") as stream:
                 obuf = ECMA376Standard.decrypt(self.secret_key, stream)
-            ofile.write(obuf)
+            outfile.write(obuf)
         elif self.type == "plain":
             raise exceptions.DecryptionError("Unencrypted document")
         else:
@@ -248,15 +290,17 @@ class OOXMLFile(base.BaseOfficeFile):
 
         # If the file is successfully decrypted, there must be a valid OOXML file, i.e. a valid zip file
         if not zipfile.is_zipfile(io.BytesIO(obuf)):
-            raise exceptions.InvalidKeyError("The file could not be decrypted with this password")
+            raise exceptions.InvalidKeyError(
+                "The file could not be decrypted with this password"
+            )
 
-    def encrypt(self, password, ofile):
+    def encrypt(self, password, outfile):
         """
         >>> from msoffcrypto.format.ooxml import OOXMLFile
-        >>> from io import BytesIO; ofile = BytesIO()
+        >>> from io import BytesIO; outfile = BytesIO()
         >>> with open("tests/outputs/example.docx", "rb") as f:
         ...     officefile = OOXMLFile(f)
-        ...     officefile.encrypt("1234", ofile)
+        ...     officefile.encrypt("1234", outfile)
         """
         if self.is_encrypted():
             raise exceptions.EncryptionError("File is already encrypted")
@@ -268,7 +312,7 @@ class OOXMLFile(base.BaseOfficeFile):
         if not olefile.isOleFile(buf):
             raise exceptions.EncryptionError("Unable to encrypt this file")
 
-        ofile.write(buf)
+        outfile.write(buf)
 
     def is_encrypted(self):
         """

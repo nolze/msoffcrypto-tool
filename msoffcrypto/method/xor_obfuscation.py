@@ -1,11 +1,7 @@
-import functools
 import io
 import logging
 from hashlib import md5
 from struct import pack
-
-from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -39,8 +35,40 @@ class DocumentXOR:
     def __init__(self):
         pass
 
-    pad_array = [0xBB, 0xFF, 0xFF, 0xBA, 0xFF, 0xFF, 0xB9, 0x80, 0x00, 0xBE, 0x0F, 0x00, 0xBF, 0x0F, 0x00]
-    initial_code = [0xE1F0, 0x1D0F, 0xCC9C, 0x84C0, 0x110C, 0x0E10, 0xF1CE, 0x313E, 0x1872, 0xE139, 0xD40F, 0x84F9, 0x280C, 0xA96A, 0x4EC3]
+    pad_array = [
+        0xBB,
+        0xFF,
+        0xFF,
+        0xBA,
+        0xFF,
+        0xFF,
+        0xB9,
+        0x80,
+        0x00,
+        0xBE,
+        0x0F,
+        0x00,
+        0xBF,
+        0x0F,
+        0x00,
+    ]
+    initial_code = [
+        0xE1F0,
+        0x1D0F,
+        0xCC9C,
+        0x84C0,
+        0x110C,
+        0x0E10,
+        0xF1CE,
+        0x313E,
+        0x1872,
+        0xE139,
+        0xD40F,
+        0x84F9,
+        0x280C,
+        0xA96A,
+        0x4EC3,
+    ]
 
     xor_matrix = [
         0xAEFC,
@@ -174,7 +202,9 @@ class DocumentXOR:
                 intermidiate_1 = 1
 
             intermidiate_2 = verifier * 2
-            intermidiate_2 = intermidiate_2 & 0x7FFF  # SET most significant bit of Intermediate2 TO 0
+            intermidiate_2 = (
+                intermidiate_2 & 0x7FFF
+            )  # SET most significant bit of Intermediate2 TO 0
 
             intermidiate_3 = intermidiate_1 ^ intermidiate_2
 
@@ -195,7 +225,9 @@ class DocumentXOR:
         for ch in data:
             for i in range(7):
                 if ch & 0x40 != 0:
-                    xor_key = (xor_key ^ DocumentXOR.xor_matrix[current_element]) % 65536
+                    xor_key = (
+                        xor_key ^ DocumentXOR.xor_matrix[current_element]
+                    ) % 65536
                 ch = (ch << 1) % 256
                 current_element -= 1
 
@@ -207,11 +239,32 @@ class DocumentXOR:
 
         index = len(password)
 
-        obfuscation_array = [0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        obfuscation_array = [
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+            0x00,
+        ]
 
         if index % 2 == 1:
-            temp = (xor_key & 0xFF00) >> 8  # SET Temp TO most significant byte of XorKey
-            obfuscation_array[index] = DocumentXOR.xor_ror(DocumentXOR.pad_array[0], temp)
+            temp = (
+                xor_key & 0xFF00
+            ) >> 8  # SET Temp TO most significant byte of XorKey
+            obfuscation_array[index] = DocumentXOR.xor_ror(
+                DocumentXOR.pad_array[0], temp
+            )
 
             index -= 1
             temp = xor_key & 0x00FF
@@ -232,13 +285,17 @@ class DocumentXOR:
 
         while pad_index > 0:
             temp = (xor_key & 0xFF00) >> 8
-            obfuscation_array[index] = DocumentXOR.xor_ror(DocumentXOR.pad_array[pad_index], temp)
+            obfuscation_array[index] = DocumentXOR.xor_ror(
+                DocumentXOR.pad_array[pad_index], temp
+            )
 
             index -= 1
             pad_index -= 1
 
             temp = xor_key & 0x00FF
-            obfuscation_array[index] = DocumentXOR.xor_ror(DocumentXOR.pad_array[pad_index], temp)
+            obfuscation_array[index] = DocumentXOR.xor_ror(
+                DocumentXOR.pad_array[pad_index], temp
+            )
 
             index -= 1
             pad_index -= 1

@@ -33,15 +33,21 @@ def _parse_encryptionheader(blob):
 
 
 # https://msdn.microsoft.com/en-us/library/dd910568(v=office.12).aspx
-def _parse_encryptionverifier(blob, algorithm):
+def _parse_encryptionverifier(blob, algorithm: str):
     (saltSize,) = unpack("<I", blob.read(4))
     salt = blob.read(16)
+
     encryptedVerifier = blob.read(16)
+
     (verifierHashSize,) = unpack("<I", blob.read(4))
+
     if algorithm == "RC4":
         encryptedVerifierHash = blob.read(20)
     elif algorithm == "AES":
         encryptedVerifierHash = blob.read(32)
+    else:
+        raise ValueError("Invalid algorithm: {}".format(algorithm))
+
     verifier = {
         "saltSize": saltSize,
         "salt": salt,
@@ -49,11 +55,12 @@ def _parse_encryptionverifier(blob, algorithm):
         "verifierHashSize": verifierHashSize,
         "encryptedVerifierHash": encryptedVerifierHash,
     }
+
     return verifier
 
 
 def _parse_header_RC4CryptoAPI(encryptionHeader):
-    flags = encryptionHeader.read(4)
+    _flags = encryptionHeader.read(4)  # TODO: Support flags
     (headerSize,) = unpack("<I", encryptionHeader.read(4))
     logger.debug(headerSize)
     blob = io.BytesIO(encryptionHeader.read(headerSize))

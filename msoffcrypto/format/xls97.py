@@ -612,6 +612,10 @@ class Xls97File(base.BaseOfficeFile):
             dec = DocumentXOR.decrypt(
                 self.key, encrypted_buf, plain_buf, record_info, 10
             )
+        else:
+            raise exceptions.DecryptionError(
+                "Unsupported encryption method: {}".format(self.type)
+            )
 
         for c in plain_buf:
             if c == -1 or c == -2:
