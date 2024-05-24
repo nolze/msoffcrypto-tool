@@ -169,7 +169,9 @@ def _parseFibBase(blob):
 
 def _packFibBase(fibbase):
     setBit = lambda bits, i, v: (bits & ~(1 << i)) | (v << i)
-    setBitSlice = lambda bits, i, w, v: (bits & ~((2**w - 1) << i)) | ((v & (2**w - 1)) << i)
+    setBitSlice = lambda bits, i, w, v: (bits & ~((2**w - 1) << i)) | (
+        (v & (2**w - 1)) << i
+    )
 
     blob = io.BytesIO()
     buf = pack("<H", fibbase.wIdent)
@@ -298,7 +300,11 @@ class Doc97File(base.BaseOfficeFile):
 
     def load_key(self, password=None):
         fib = self.info.fib
-        logger.debug("fEncrypted: {}, fObfuscation: {}".format(fib.base.fEncrypted, fib.base.fObfuscation))
+        logger.debug(
+            "fEncrypted: {}, fObfuscation: {}".format(
+                fib.base.fEncrypted, fib.base.fObfuscation
+            )
+        )
 
         if fib.base.fEncrypted == 1:
             if fib.base.fObfuscation == 1:  # Using XOR obfuscation
@@ -306,41 +312,62 @@ class Doc97File(base.BaseOfficeFile):
                 logger.debug(hex(xor_obf_password_verifier))
             else:  # elif fib.base.fObfuscation == 0:
                 encryptionHeader_size = fib.base.IKey
-                logger.debug("encryptionHeader_size: {}".format(hex(encryptionHeader_size)))
+                logger.debug(
+                    "encryptionHeader_size: {}".format(hex(encryptionHeader_size))
+                )
                 with self.ole.openstream(self.info.tablename) as table:
-                    encryptionHeader = table  # TODO why create a 2nd reference to same stream?
+                    encryptionHeader = (
+                        table  # TODO why create a 2nd reference to same stream?
+                    )
                     encryptionVersionInfo = table.read(4)
                     vMajor, vMinor = unpack("<HH", encryptionVersionInfo)
                     logger.debug("Version: {} {}".format(vMajor, vMinor))
                     if vMajor == 0x0001 and vMinor == 0x0001:  # RC4
                         info = _parse_header_RC4(encryptionHeader)
-                        if DocumentRC4.verifypw(password, info["salt"], info["encryptedVerifier"], info["encryptedVerifierHash"]):
+                        if DocumentRC4.verifypw(
+                            password,
+                            info["salt"],
+                            info["encryptedVerifier"],
+                            info["encryptedVerifierHash"],
+                        ):
                             self.type = "rc4"
                             self.key = password
                             self.salt = info["salt"]
                         else:
-                            raise exceptions.InvalidKeyError("Failed to verify password")
-                    elif vMajor in [0x0002, 0x0003, 0x0004] and vMinor == 0x0002:  # RC4 CryptoAPI
+                            raise exceptions.InvalidKeyError(
+                                "Failed to verify password"
+                            )
+                    elif (
+                        vMajor in [0x0002, 0x0003, 0x0004] and vMinor == 0x0002
+                    ):  # RC4 CryptoAPI
                         info = _parse_header_RC4CryptoAPI(encryptionHeader)
                         if DocumentRC4CryptoAPI.verifypw(
-                            password, info["salt"], info["keySize"], info["encryptedVerifier"], info["encryptedVerifierHash"]
+                            password,
+                            info["salt"],
+                            info["keySize"],
+                            info["encryptedVerifier"],
+                            info["encryptedVerifierHash"],
                         ):
                             self.type = "rc4_cryptoapi"
                             self.key = password
                             self.salt = info["salt"]
                             self.keySize = info["keySize"]
                         else:
-                            raise exceptions.InvalidKeyError("Failed to verify password")
+                            raise exceptions.InvalidKeyError(
+                                "Failed to verify password"
+                            )
                     else:
-                        raise exceptions.DecryptionError("Unsupported encryption method")
+                        raise exceptions.DecryptionError(
+                            "Unsupported encryption method"
+                        )
         else:
             raise exceptions.DecryptionError("File is not encrypted")
 
-    def decrypt(self, ofile):
-        # fd, _ofile_path = tempfile.mkstemp()
+    def decrypt(self, outfile):
+        # fd, _outfile_path = tempfile.mkstemp()
 
-        # shutil.copyfile(os.path.realpath(self.file.name), _ofile_path)
-        # outole = olefile.OleFileIO(_ofile_path, write_mode=True)
+        # shutil.copyfile(os.path.realpath(self.file.name), _outfile_path)
+        # outole = olefile.OleFileIO(_outfile_path, write_mode=True)
 
         obuf1 = io.BytesIO()
         fibbase = FibBase(
@@ -393,7 +420,9 @@ class Doc97File(base.BaseOfficeFile):
             if self.type == "rc4":
                 dec1 = DocumentRC4.decrypt(self.key, self.salt, worddocument)
             elif self.type == "rc4_cryptoapi":
-                dec1 = DocumentRC4CryptoAPI.decrypt(self.key, self.salt, self.keySize, worddocument)
+                dec1 = DocumentRC4CryptoAPI.decrypt(
+                    self.key, self.salt, self.keySize, worddocument
+                )
             dec1.seek(FIB_LENGTH)
             obuf1.write(dec1.read())
             obuf1.seek(0)
@@ -405,7 +434,9 @@ class Doc97File(base.BaseOfficeFile):
                 dec2 = DocumentRC4.decrypt(self.key, self.salt, stream)
         elif self.type == "rc4_cryptoapi":
             with self.ole.openstream(self.info.tablename) as stream:
-                dec2 = DocumentRC4CryptoAPI.decrypt(self.key, self.salt, self.keySize, stream)
+                dec2 = DocumentRC4CryptoAPI.decrypt(
+                    self.key, self.salt, self.keySize, stream
+                )
         obuf2.write(dec2.read())
         obuf2.seek(0)
 
@@ -417,25 +448,27 @@ class Doc97File(base.BaseOfficeFile):
                     dec3 = DocumentRC4.decrypt(self.key, self.salt, data_stream)
             elif self.type == "rc4_cryptoapi":
                 with self.ole.openstream("Data") as data_stream:
-                    dec3 = DocumentRC4CryptoAPI.decrypt(self.key, self.salt, self.keySize, data_stream)
+                    dec3 = DocumentRC4CryptoAPI.decrypt(
+                        self.key, self.salt, self.keySize, data_stream
+                    )
             obuf3.write(dec3.read())
             obuf3.seek(0)
 
-        with tempfile.TemporaryFile() as _ofile:
+        with tempfile.TemporaryFile() as _outfile:
             self.file.seek(0)
-            shutil.copyfileobj(self.file, _ofile)
-            outole = olefile.OleFileIO(_ofile, write_mode=True)
+            shutil.copyfileobj(self.file, _outfile)
+            outole = olefile.OleFileIO(_outfile, write_mode=True)
 
             outole.write_stream("wordDocument", obuf1.read())
             outole.write_stream(self.info.tablename, obuf2.read())
             if obuf3:
                 outole.write_stream("Data", obuf3.read())
 
-            # _ofile = open(_ofile_path, 'rb')
+            # _outfile = open(_outfile_path, 'rb')
 
-            _ofile.seek(0)
+            _outfile.seek(0)
 
-            shutil.copyfileobj(_ofile, ofile)
+            shutil.copyfileobj(_outfile, outfile)
 
     def is_encrypted(self):
         r"""

@@ -14,9 +14,9 @@ class BaseOfficeFile(ABC):
         pass
 
     @abc.abstractmethod
-    def decrypt(self):
+    def decrypt(self, outfile):
         pass
 
     @abc.abstractmethod
-    def is_encrypted(self):
+    def is_encrypted(self) -> bool:
         pass

@@ -51,7 +51,9 @@ def _parseRecordHeader(blob):
 
 
 def _packRecordHeader(rh):
-    setBitSlice = lambda bits, i, w, v: (bits & ~((2**w - 1) << i)) | ((v & (2**w - 1)) << i)
+    setBitSlice = lambda bits, i, w, v: (bits & ~((2**w - 1) << i)) | (
+        (v & (2**w - 1)) << i
+    )
 
     blob = io.BytesIO()
 
@@ -227,7 +229,9 @@ def _parseUserEditAtom(blob):
     assert rh.recVer == 0x0
     assert rh.recInstance == 0x000
     assert rh.recType == 0x0FF5
-    assert rh.recLen == 0x0000001C or rh.recLen == 0x00000020  # 0x0000001c + len(encryptSessionPersistIdRef)
+    assert (
+        rh.recLen == 0x0000001C or rh.recLen == 0x00000020
+    )  # 0x0000001c + len(encryptSessionPersistIdRef)
 
     (lastSlideIdRef,) = unpack("<I", blob.read(4))
     (version,) = unpack("<H", blob.read(2))
@@ -340,7 +344,9 @@ def _parsePersistDirectoryEntry(blob):
 
 
 def _packPersistDirectoryEntry(directoryentry):
-    setBitSlice = lambda bits, i, w, v: (bits & ~((2**w - 1) << i)) | ((v & (2**w - 1)) << i)
+    setBitSlice = lambda bits, i, w, v: (bits & ~((2**w - 1) << i)) | (
+        (v & (2**w - 1)) << i
+    )
 
     blob = io.BytesIO()
 
@@ -553,16 +559,26 @@ class Ppt97File(base.BaseOfficeFile):
         currentuser = _parseCurrentUser(self.data.currentuser)
         logger.debug("[*] currentuser: {}".format(currentuser))
 
-        self.data.powerpointdocument.seek(currentuser.currentuseratom.offsetToCurrentEdit)
+        self.data.powerpointdocument.seek(
+            currentuser.currentuseratom.offsetToCurrentEdit
+        )
         usereditatom = _parseUserEditAtom(self.data.powerpointdocument)
         logger.debug("[*] usereditatom: {}".format(usereditatom))
 
         # cf. Part 2 in https://docs.microsoft.com/en-us/openspecs/office_file_formats/ms-ppt/1fc22d56-28f9-4818-bd45-67c2bf721ccf
-        cryptsession10container_offset = persistobjectdirectory[usereditatom.encryptSessionPersistIdRef]
-        logger.debug("[*] cryptsession10container_offset: {}".format(cryptsession10container_offset))
+        cryptsession10container_offset = persistobjectdirectory[
+            usereditatom.encryptSessionPersistIdRef
+        ]
+        logger.debug(
+            "[*] cryptsession10container_offset: {}".format(
+                cryptsession10container_offset
+            )
+        )
 
         self.data.powerpointdocument.seek(cryptsession10container_offset)
-        cryptsession10container = _parseCryptSession10Container(self.data.powerpointdocument)
+        cryptsession10container = _parseCryptSession10Container(
+            self.data.powerpointdocument
+        )
         logger.debug("[*] cryptsession10container: {}".format(cryptsession10container))
 
         encryptionInfo = io.BytesIO(cryptsession10container.data)
@@ -574,7 +590,13 @@ class Ppt97File(base.BaseOfficeFile):
         assert vMajor in [0x0002, 0x0003, 0x0004] and vMinor == 0x0002  # RC4 CryptoAPI
 
         info = _parse_header_RC4CryptoAPI(encryptionInfo)
-        if DocumentRC4CryptoAPI.verifypw(password, info["salt"], info["keySize"], info["encryptedVerifier"], info["encryptedVerifierHash"]):
+        if DocumentRC4CryptoAPI.verifypw(
+            password,
+            info["salt"],
+            info["keySize"],
+            info["encryptedVerifier"],
+            info["encryptedVerifierHash"],
+        ):
             self.type = "rc4_cryptoapi"
             self.key = password
             self.salt = info["salt"]
@@ -582,7 +604,7 @@ class Ppt97File(base.BaseOfficeFile):
         else:
             raise exceptions.InvalidKeyError("Failed to verify password")
 
-    def decrypt(self, ofile):
+    def decrypt(self, outfile):
         # Current User Stream
         self.data.currentuser.seek(0)
         currentuser = _parseCurrentUser(self.data.currentuser)
@@ -625,10 +647,14 @@ class Ppt97File(base.BaseOfficeFile):
         dec_bytearray = bytearray(self.data.powerpointdocument.read())
 
         # UserEditAtom
-        self.data.powerpointdocument.seek(currentuser.currentuseratom.offsetToCurrentEdit)
+        self.data.powerpointdocument.seek(
+            currentuser.currentuseratom.offsetToCurrentEdit
+        )
         # currentuseratom_raw = self.data.powerpointdocument.read(40)
 
-        self.data.powerpointdocument.seek(currentuser.currentuseratom.offsetToCurrentEdit)
+        self.data.powerpointdocument.seek(
+            currentuser.currentuseratom.offsetToCurrentEdit
+        )
         usereditatom = _parseUserEditAtom(self.data.powerpointdocument)
         # logger.debug(usereditatom)
         # logger.debug(["offsetToCurrentEdit", currentuser.currentuseratom.offsetToCurrentEdit])
@@ -668,7 +694,9 @@ class Ppt97File(base.BaseOfficeFile):
         dec_bytearray[offset : offset + len(buf_bytes)] = buf_bytes
 
         # PersistDirectoryAtom
-        self.data.powerpointdocument.seek(currentuser.currentuseratom.offsetToCurrentEdit)
+        self.data.powerpointdocument.seek(
+            currentuser.currentuseratom.offsetToCurrentEdit
+        )
         usereditatom = _parseUserEditAtom(self.data.powerpointdocument)
         # logger.debug(usereditatom)
 
@@ -683,7 +711,9 @@ class Ppt97File(base.BaseOfficeFile):
                     persistId=persistdirectoryatom.rgPersistDirEntry[0].persistId,
                     # Omit CryptSession10Container
                     cPersist=persistdirectoryatom.rgPersistDirEntry[0].cPersist - 1,
-                    rgPersistOffset=persistdirectoryatom.rgPersistDirEntry[0].rgPersistOffset,
+                    rgPersistOffset=persistdirectoryatom.rgPersistDirEntry[
+                        0
+                    ].rgPersistOffset,
                 ),
             ],
         )
@@ -710,7 +740,9 @@ class Ppt97File(base.BaseOfficeFile):
             if rh.recType == 0x2F14:
                 logger.debug("[*] CryptSession10Container found")
                 # Remove encryption, pad by zero to preserve stream size
-                dec_bytearray[offset : offset + (8 + rh.recLen)] = b"\x00" * (8 + rh.recLen)
+                dec_bytearray[offset : offset + (8 + rh.recLen)] = b"\x00" * (
+                    8 + rh.recLen
+                )
                 continue
 
             # The UserEditAtom record (section 2.3.3) and the PersistDirectoryAtom record (section 2.3.4) MUST NOT be encrypted.
@@ -724,8 +756,17 @@ class Ppt97File(base.BaseOfficeFile):
 
             self.data.powerpointdocument.seek(offset)
             enc_buf = io.BytesIO(self.data.powerpointdocument.read(8 + recLen))
-            blocksize = self.keySize * ((8 + recLen) // self.keySize + 1)  # Undocumented
-            dec = DocumentRC4CryptoAPI.decrypt(self.key, self.salt, self.keySize, enc_buf, blocksize=blocksize, block=persistId)
+            blocksize = self.keySize * (
+                (8 + recLen) // self.keySize + 1
+            )  # Undocumented
+            dec = DocumentRC4CryptoAPI.decrypt(
+                self.key,
+                self.salt,
+                self.keySize,
+                enc_buf,
+                blocksize=blocksize,
+                block=persistId,
+            )
             dec_bytes = bytearray(dec.read())
             dec_bytearray[offset : offset + len(dec_bytes)] = dec_bytes
 
@@ -740,7 +781,11 @@ class Ppt97File(base.BaseOfficeFile):
             logger.debug("[*] rh: {}".format(rh))
 
         dec_buf.seek(0)
-        logger.debug("[*] powerpointdocument_size={}, len(dec_buf.read())={}".format(powerpointdocument_size, len(dec_buf.read())))
+        logger.debug(
+            "[*] powerpointdocument_size={}, len(dec_buf.read())={}".format(
+                powerpointdocument_size, len(dec_buf.read())
+            )
+        )
 
         dec_buf.seek(0)
         powerpointdocument_dec_buf = dec_buf
@@ -748,17 +793,19 @@ class Ppt97File(base.BaseOfficeFile):
         # TODO: Pictures Stream
         # TODO: Encrypted Summary Info Stream
 
-        with tempfile.TemporaryFile() as _ofile:
+        with tempfile.TemporaryFile() as _outfile:
             self.file.seek(0)
-            shutil.copyfileobj(self.file, _ofile)
-            outole = olefile.OleFileIO(_ofile, write_mode=True)
+            shutil.copyfileobj(self.file, _outfile)
+            outole = olefile.OleFileIO(_outfile, write_mode=True)
 
             outole.write_stream("Current User", currentuser_buf.read())
-            outole.write_stream("PowerPoint Document", powerpointdocument_dec_buf.read())
+            outole.write_stream(
+                "PowerPoint Document", powerpointdocument_dec_buf.read()
+            )
 
             # Finalize
-            _ofile.seek(0)
-            shutil.copyfileobj(_ofile, ofile)
+            _outfile.seek(0)
+            shutil.copyfileobj(_outfile, outfile)
 
         return
 
@@ -779,7 +826,9 @@ class Ppt97File(base.BaseOfficeFile):
         currentuser = _parseCurrentUser(self.data.currentuser)
         logger.debug("[*] currentuser: {}".format(currentuser))
 
-        self.data.powerpointdocument.seek(currentuser.currentuseratom.offsetToCurrentEdit)
+        self.data.powerpointdocument.seek(
+            currentuser.currentuseratom.offsetToCurrentEdit
+        )
         usereditatom = _parseUserEditAtom(self.data.powerpointdocument)
         logger.debug("[*] usereditatom: {}".format(usereditatom))
 

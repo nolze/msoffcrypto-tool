@@ -1,6 +1,9 @@
-import logging, io, shutil, tempfile
-from struct import pack, unpack
+import io
+import logging
+import shutil
+import tempfile
 from collections import namedtuple
+from struct import pack, unpack
 
 import olefile
 
@@ -483,7 +486,9 @@ class Xls97File(base.BaseOfficeFile):
         (size,) = unpack("<H", workbook.data.read(2))
         workbook.data.read(size)  # Skip BOF
 
-        num, size = workbook.skip_to(recordNameNum["FilePass"])  # Skip to FilePass; TODO: Raise exception if not encrypted
+        num, size = workbook.skip_to(
+            recordNameNum["FilePass"]
+        )  # Skip to FilePass; TODO: Raise exception if not encrypted
 
         # FilePass: https://msdn.microsoft.com/en-us/library/dd952596(v=office.12).aspx
         # If this record exists, the workbook MUST be encrypted.
@@ -510,18 +515,29 @@ class Xls97File(base.BaseOfficeFile):
             if vMajor == 0x0001 and vMinor == 0x0001:  # RC4
                 info = _parse_header_RC4(encryptionInfo)
 
-                if DocumentRC4.verifypw(password, info["salt"], info["encryptedVerifier"], info["encryptedVerifierHash"]):
+                if DocumentRC4.verifypw(
+                    password,
+                    info["salt"],
+                    info["encryptedVerifier"],
+                    info["encryptedVerifierHash"],
+                ):
                     self.type = "rc4"
                     self.key = password
                     self.salt = info["salt"]
                 else:
                     raise exceptions.InvalidKeyError("Failed to verify password")
 
-            elif vMajor in [0x0002, 0x0003, 0x0004] and vMinor == 0x0002:  # RC4 CryptoAPI
+            elif (
+                vMajor in [0x0002, 0x0003, 0x0004] and vMinor == 0x0002
+            ):  # RC4 CryptoAPI
                 info = _parse_header_RC4CryptoAPI(encryptionInfo)
 
                 if DocumentRC4CryptoAPI.verifypw(
-                    password, info["salt"], info["keySize"], info["encryptedVerifier"], info["encryptedVerifierHash"]
+                    password,
+                    info["salt"],
+                    info["keySize"],
+                    info["encryptedVerifier"],
+                    info["encryptedVerifierHash"],
                 ):
                     self.type = "rc4_cryptoapi"
                     self.key = password
@@ -533,11 +549,11 @@ class Xls97File(base.BaseOfficeFile):
             else:
                 raise exceptions.DecryptionError("Unsupported encryption method")
 
-    def decrypt(self, ofile):
-        # fd, _ofile_path = tempfile.mkstemp()
+    def decrypt(self, outfile):
+        # fd, _outfile_path = tempfile.mkstemp()
 
-        # shutil.copyfile(os.path.realpath(self.file.name), _ofile_path)
-        # outole = olefile.OleFileIO(_ofile_path, write_mode=True)
+        # shutil.copyfile(os.path.realpath(self.file.name), _outfile_path)
+        # outole = olefile.OleFileIO(_outfile_path, write_mode=True)
 
         # List of encrypted parts: https://msdn.microsoft.com/en-us/library/dd905723(v=office.12).aspx
 
@@ -572,7 +588,9 @@ class Xls97File(base.BaseOfficeFile):
             # The lbPlyPos field of the BoundSheet8 record (section 2.4.28) MUST NOT be encrypted.
             elif num == recordNameNum["BoundSheet8"]:
                 header = pack("<HH", num, size)
-                plain_buf += list(header) + list(record.read(4)) + [-2] * (size - 4)  # Preserve lbPlyPos
+                plain_buf += (
+                    list(header) + list(record.read(4)) + [-2] * (size - 4)
+                )  # Preserve lbPlyPos
                 encrypted_buf.write(b"\x00" * 4 + b"\x00" * 4 + record.read())
             else:
                 header = pack("<HH", num, size)
@@ -583,11 +601,17 @@ class Xls97File(base.BaseOfficeFile):
         encrypted_buf.seek(0)
 
         if self.type == "rc4":
-            dec = DocumentRC4.decrypt(self.key, self.salt, encrypted_buf, blocksize=1024)
+            dec = DocumentRC4.decrypt(
+                self.key, self.salt, encrypted_buf, blocksize=1024
+            )
         elif self.type == "rc4_cryptoapi":
-            dec = DocumentRC4CryptoAPI.decrypt(self.key, self.salt, self.keySize, encrypted_buf, blocksize=1024)
+            dec = DocumentRC4CryptoAPI.decrypt(
+                self.key, self.salt, self.keySize, encrypted_buf, blocksize=1024
+            )
         elif self.type == "xor":
-            dec = DocumentXOR.decrypt(self.key, encrypted_buf, plain_buf, record_info, 10)
+            dec = DocumentXOR.decrypt(
+                self.key, encrypted_buf, plain_buf, record_info, 10
+            )
 
         for c in plain_buf:
             if c == -1 or c == -2:
@@ -603,18 +627,18 @@ class Xls97File(base.BaseOfficeFile):
 
         workbook_dec = dec
 
-        with tempfile.TemporaryFile() as _ofile:
+        with tempfile.TemporaryFile() as _outfile:
             self.file.seek(0)
-            shutil.copyfileobj(self.file, _ofile)
-            outole = olefile.OleFileIO(_ofile, write_mode=True)
+            shutil.copyfileobj(self.file, _outfile)
+            outole = olefile.OleFileIO(_outfile, write_mode=True)
 
             outole.write_stream("Workbook", workbook_dec.read())
 
-            # _ofile = open(_ofile_path, 'rb')
+            # _outfile = open(_outfile_path, 'rb')
 
-            _ofile.seek(0)
+            _outfile.seek(0)
 
-            shutil.copyfileobj(_ofile, ofile)
+            shutil.copyfileobj(_outfile, outfile)
 
         return
 
