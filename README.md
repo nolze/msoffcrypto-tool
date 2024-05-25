@@ -245,7 +245,12 @@ poetry run coverage run -m pytest -v
 ### General
 
 * <https://repology.org/project/python:msoffcrypto-tool/versions> (kudos to maintainers!)
-* <https://checkroth.com/unlocking-password-protected-files.html>
+<!-- * <https://checkroth.com/unlocking-password-protected-files.html> (outdated) -->
+
+### Corporate
+
+* Workato <https://docs.workato.com/connectors/python.html#supported-features> <!-- https://web.archive.org/web/20240525062245/https://docs.workato.com/connectors/python.html#supported-features -->
+* Check Point <https://www.checkpoint.com/about-us/copyright-and-trademarks/> <!-- https://web.archive.org/web/20230326071230/https://www.checkpoint.com/about-us/copyright-and-trademarks/ -->
 
 ### Malware/maldoc analysis
 
