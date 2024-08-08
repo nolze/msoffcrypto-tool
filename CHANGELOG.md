@@ -1,4 +1,9 @@
 
+v5.4.2 / 2024-08-09
+===================
+
+  * Fix DeprecationWarning from cryptography library (reported by @dennn11, [#92](https://github.com/nolze/msoffcrypto-tool/issues/92))
+
 v5.4.1 / 2024-05-25
 ===================
 
