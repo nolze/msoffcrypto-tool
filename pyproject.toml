@@ -10,7 +10,7 @@ packages = [{ include = "msoffcrypto" }, { include = "NOTICE.txt" }]
 
 [tool.poetry.dependencies]
 python = "^3.8"
-cryptography = ">=35.0"
+cryptography = ">=39.0"
 olefile = ">=0.46"
 
 [tool.poetry.group.dev.dependencies]

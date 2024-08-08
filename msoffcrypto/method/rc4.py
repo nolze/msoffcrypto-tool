@@ -5,7 +5,14 @@ from hashlib import md5
 from struct import pack
 
 from cryptography.hazmat.backends import default_backend
-from cryptography.hazmat.primitives.ciphers import Cipher, algorithms
+from cryptography.hazmat.primitives.ciphers import Cipher
+
+try:
+    # NOTE: Avoid DeprecationWarning since cryptography>=43.0
+    # TODO: .algorithm differs from the official documentation
+    from cryptography.hazmat.decrepit.ciphers.algorithms import ARC4
+except ImportError:
+    from cryptography.hazmat.primitives.ciphers.algorithms import ARC4
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
@@ -54,7 +61,7 @@ class DocumentRC4:
         # https://msdn.microsoft.com/en-us/library/dd952648(v=office.12).aspx
         block = 0
         key = _makekey(password, salt, block)
-        cipher = Cipher(algorithms.ARC4(key), mode=None, backend=default_backend())
+        cipher = Cipher(ARC4(key), mode=None, backend=default_backend())
         decryptor = cipher.decryptor()
         verifier = decryptor.update(encryptedVerifier)
         verfiferHash = decryptor.update(encryptedVerifierHash)
@@ -73,7 +80,7 @@ class DocumentRC4:
         key = _makekey(password, salt, block)
 
         for c, buf in enumerate(iter(functools.partial(ibuf.read, blocksize), b"")):
-            cipher = Cipher(algorithms.ARC4(key), mode=None, backend=default_backend())
+            cipher = Cipher(ARC4(key), mode=None, backend=default_backend())
             decryptor = cipher.decryptor()
 
             dec = decryptor.update(buf) + decryptor.finalize()
