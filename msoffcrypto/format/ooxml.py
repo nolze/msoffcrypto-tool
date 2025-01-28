@@ -253,7 +253,7 @@ class OOXMLFile(base.BaseOfficeFile):
         ...     officefile.load_key("1234")
         ...     officefile.decrypt(outfile)
         Traceback (most recent call last):
-        msoffcrypto.exceptions.DecryptionError: Unencrypted document
+        msoffcrypto.exceptions.DecryptionError: Document is not encrypted
         """
         if self.type == "agile":
             with self.file.openstream("EncryptedPackage") as stream:
@@ -284,7 +284,7 @@ class OOXMLFile(base.BaseOfficeFile):
                 obuf = ECMA376Standard.decrypt(self.secret_key, stream)
             outfile.write(obuf)
         elif self.type == "plain":
-            raise exceptions.DecryptionError("Unencrypted document")
+            raise exceptions.DecryptionError("Document is not encrypted")
         else:
             raise exceptions.DecryptionError("Unsupported encryption method")
 
