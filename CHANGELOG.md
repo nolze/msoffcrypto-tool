@@ -1,4 +1,11 @@
 
+v6.0.0 / 2026-01-12
+===================
+
+  * (BREAKING) Drop support for Python 3.8 and 3.9, add Python 3.14 to CI
+  * Update dependencies
+  * Clarify error messages
+
 v5.4.2 / 2024-08-09
 ===================
 
