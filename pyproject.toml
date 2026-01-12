@@ -9,7 +9,7 @@ readme = "README.md"
 packages = [{ include = "msoffcrypto" }, { include = "NOTICE.txt" }]
 
 [tool.poetry.dependencies]
-python = "^3.9"
+python = "^3.10"
 cryptography = ">=39.0"
 olefile = ">=0.46"
 
