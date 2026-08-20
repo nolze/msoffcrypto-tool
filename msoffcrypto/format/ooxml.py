@@ -1,8 +1,12 @@
+from __future__ import annotations
+
 import base64
 import io
 import logging
 import zipfile
+from collections.abc import Iterator
 from struct import unpack
+from typing import BinaryIO
 from xml.dom.minidom import parseString
 
 import olefile
@@ -15,6 +19,47 @@ from msoffcrypto.method.ecma376_standard import ECMA376Standard
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
+_ZIP_EOCD_SIGNATURE = b"PK\x05\x06"
+_ZIP_EOCD_SIZE = 22
+_ZIP_MAX_COMMENT_SIZE = 0xFFFF
+_ZIP_MAX_TAIL_SIZE = _ZIP_EOCD_SIZE + _ZIP_MAX_COMMENT_SIZE  # 22 + 65535 = 65557
+
+
+def _is_zipfile_tail(tail: bytes) -> bool:
+    """Return True if ``tail`` is the trailing bytes of a valid zip file.
+
+    ``zipfile.is_zipfile`` needs a seekable file and validates the
+    end-of-central-directory record found in the last ``_ZIP_MAX_TAIL_SIZE``
+    bytes.  This equivalent check only needs those trailing bytes, so a
+    decrypted stream can be validated without buffering the whole payload.
+    """
+    start = tail.rfind(_ZIP_EOCD_SIGNATURE)
+    if start < 0:
+        return False
+    record = tail[start : start + _ZIP_EOCD_SIZE]
+    if len(record) != _ZIP_EOCD_SIZE:
+        return False
+    (comment_size,) = unpack("<H", record[20:22])
+    return len(tail) - start >= _ZIP_EOCD_SIZE + comment_size
+
+
+def _decrypt_stream_to(outfile: BinaryIO, chunks: Iterator[bytes]) -> bytes:
+    """Write ``chunks`` to ``outfile`` and return the trailing bytes written.
+
+    Keeps only the last ``_ZIP_MAX_TAIL_SIZE`` bytes so peak memory stays
+    constant regardless of the payload size.
+    """
+    tail = bytearray()
+    for chunk in chunks:
+        outfile.write(chunk)
+        tail.extend(chunk)
+        if len(tail) > _ZIP_MAX_TAIL_SIZE:
+            del tail[: len(tail) - _ZIP_MAX_TAIL_SIZE]
+    return bytes(tail)
+
+
+
 
 
 def _is_ooxml(file):
@@ -272,24 +317,28 @@ class OOXMLFile(base.BaseOfficeFile):
                             "Payload integrity verification failed"
                         )
 
-                obuf = ECMA376Agile.decrypt(
-                    self.secret_key,
-                    self.info["keyDataSalt"],
-                    self.info["keyDataHashAlgorithm"],
-                    stream,
+                tail = _decrypt_stream_to(
+                    outfile,
+                    ECMA376Agile.decrypt_stream(
+                        self.secret_key,
+                        self.info["keyDataSalt"],
+                        self.info["keyDataHashAlgorithm"],
+                        stream,
+                    ),
                 )
-            outfile.write(obuf)
         elif self.type == "standard":
             with self.file.openstream("EncryptedPackage") as stream:
-                obuf = ECMA376Standard.decrypt(self.secret_key, stream)
-            outfile.write(obuf)
+                tail = _decrypt_stream_to(
+                    outfile,
+                    ECMA376Standard.decrypt_stream(self.secret_key, stream),
+                )
         elif self.type == "plain":
             raise exceptions.DecryptionError("Document is not encrypted")
         else:
             raise exceptions.DecryptionError("Unsupported encryption method")
 
         # If the file is successfully decrypted, there must be a valid OOXML file, i.e. a valid zip file
-        if not zipfile.is_zipfile(io.BytesIO(obuf)):
+        if not _is_zipfile_tail(tail):
             raise exceptions.InvalidKeyError(
                 "The file could not be decrypted with this password"
             )
