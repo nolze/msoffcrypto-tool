@@ -397,7 +397,8 @@ class _BIFFStream:
         pos = self.data.tell()
         while True:
             h = self.data.read(4)
-            if not h:
+            # The stream can end in padding shorter than a record header, e.g. xlwt pads it to 4096 bytes
+            if len(h) < 4:
                 self.data.seek(pos)
                 return False
             num, size = unpack("<HH", h)
