@@ -394,18 +394,25 @@ class _BIFFStream:
         self.data = data
 
     def has_record(self, target):
+        """Search the current substream, preserving the stream position."""
         pos = self.data.tell()
-        while True:
-            h = self.data.read(4)
-            if not h:
-                self.data.seek(pos)
-                return False
-            num, size = unpack("<HH", h)
-            if num == target:
-                self.data.seek(pos)
-                return True
-            else:
-                self.data.read(size)
+        try:
+            while True:
+                offset = self.data.tell()
+                h = self.data.read(4)
+                if len(h) < 4:
+                    raise exceptions.ParseError("Incomplete BIFF record header at offset {} before EOF".format(offset))
+                num, size = unpack("<HH", h)
+                if len(self.data.read(size)) != size:
+                    raise exceptions.ParseError("Incomplete BIFF record payload at offset {}".format(offset))
+                if num == target:
+                    return True
+                # MS-XLS: EOF marks the end of each substream.
+                # https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-xls/5e380e95-a9f5-4dfd-b6d9-c6998a9772f8
+                if num == recordNameNum["EOF"]:
+                    return False
+        finally:
+            self.data.seek(pos)
 
     def skip_to(self, target):
         while True:
@@ -669,6 +676,9 @@ class Xls97File(base.BaseOfficeFile):
         (size,) = unpack("<H", workbook.data.read(2))
         workbook.data.read(size)
 
+        # FilePass belongs to the Globals substream (MS-XLS 2.1.7.20.3).
+        # https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-xls/ca4c1748-8729-4a93-abb9-4602b3a01fb1
+        # Stop at its EOF, without scanning sheets or trailing stream padding.
         if not workbook.has_record(recordNameNum["FilePass"]):
             return False
 
