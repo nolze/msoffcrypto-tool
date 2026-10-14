@@ -1,7 +1,9 @@
-import io
+import functools
 import logging
+from collections.abc import Iterator
 from hashlib import sha1
 from struct import pack, unpack
+from typing import BinaryIO
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -9,27 +11,47 @@ from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
 
+SEGMENT_LENGTH = 4096
+
 
 class ECMA376Standard:
     def __init__(self):
         pass
 
     @staticmethod
-    def decrypt(key, ibuf):
+    def decrypt(key: bytes, ibuf: BinaryIO) -> bytes:
         r"""
         Return decrypted data.
 
         """
-        obuf = io.BytesIO()
+        return b"".join(ECMA376Standard.decrypt_stream(key, ibuf))
+
+    @staticmethod
+    def decrypt_stream(key: bytes, ibuf: BinaryIO) -> Iterator[bytes]:
+        r"""
+        Yield decrypted data in chunks.
+
+        Only the first 4 bytes (``totalSize``) describe the real length; the
+        encrypted data is padded to the AES block size, so exactly ``totalSize``
+        plaintext bytes are yielded.
+        """
         totalSize = unpack("<I", ibuf.read(4))[0]
         logger.debug("totalSize: {}".format(totalSize))
         ibuf.seek(8)
         aes = Cipher(algorithms.AES(key), modes.ECB(), backend=default_backend())
         decryptor = aes.decryptor()
-        x = ibuf.read()
-        dec = decryptor.update(x) + decryptor.finalize()
-        obuf.write(dec[:totalSize])
-        return obuf.getvalue()  # return obuf.getbuffer()
+        remaining = totalSize
+        for buf in iter(functools.partial(ibuf.read, SEGMENT_LENGTH), b""):
+            dec = decryptor.update(buf)
+            if remaining < len(dec):
+                dec = dec[:remaining]
+            yield dec
+            remaining -= len(dec)
+            if remaining <= 0:
+                break
+        dec = decryptor.finalize()
+        if remaining > 0 and dec:
+            yield dec[:remaining]
 
     @staticmethod
     def verifykey(key, encryptedVerifier, encryptedVerifierHash):

@@ -6,8 +6,10 @@ import hmac
 import io
 import logging
 import secrets
+from collections.abc import Iterator
 from hashlib import sha1, sha256, sha384, sha512
 from struct import pack, unpack
+from typing import BinaryIO
 
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import serialization
@@ -203,7 +205,7 @@ class ECMA376Agile:
         return encryption_key
 
     @staticmethod
-    def decrypt(key, keyDataSalt, hashAlgorithm, ibuf):
+    def decrypt(key: bytes, keyDataSalt: bytes, hashAlgorithm: str, ibuf: BinaryIO) -> bytes:
         r"""
         Return decrypted data.
 
@@ -211,11 +213,23 @@ class ECMA376Agile:
             >>> keyDataSalt = b'\x8f\xc7x"+P\x8d\xdcL\xe6\x8c\xdd\x15<\x16\xb4'
             >>> hashAlgorithm = 'SHA512'
         """
+        return b"".join(
+            ECMA376Agile.decrypt_stream(key, keyDataSalt, hashAlgorithm, ibuf)
+        )
+
+    @staticmethod
+    def decrypt_stream(
+        key: bytes, keyDataSalt: bytes, hashAlgorithm: str, ibuf: BinaryIO
+    ) -> Iterator[bytes]:
+        r"""
+        Yield decrypted data in chunks.
+
+        Reads ``ibuf`` in ``SEGMENT_LENGTH``-byte segments and yields each
+        decrypted segment instead of buffering the whole payload in memory.
+        """
         # NOTE: See https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/9e61da63-8ddb-4c0a-b25d-f85d990f44c8
         SEGMENT_LENGTH = 4096
         hashCalc = _get_hash_func(hashAlgorithm)
-
-        obuf = io.BytesIO()
 
         # NOTE: See https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/b60c8b35-2db2-4409-8710-59d88a793f83
         ibuf.seek(0)
@@ -235,12 +249,11 @@ class ECMA376Agile:
             # TODO: Check
             if remaining < len(dec):
                 dec = dec[:remaining]
-            obuf.write(dec)
+            yield dec
             remaining -= len(dec)
             # TODO: Check if this is needed
             if remaining <= 0:
                 break
-        return obuf.getvalue()  # return obuf.getbuffer()
 
     @staticmethod
     def encrypt(key, ibuf, salt_value=None, spin_count=100000):

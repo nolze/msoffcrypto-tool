@@ -1,8 +1,12 @@
+from __future__ import annotations
+
 import base64
 import io
 import logging
 import zipfile
+from collections.abc import Iterator
 from struct import unpack
+from typing import BinaryIO
 from xml.dom.minidom import parseString
 
 import olefile
@@ -15,6 +19,149 @@ from msoffcrypto.method.ecma376_standard import ECMA376Standard
 
 logger = logging.getLogger(__name__)
 logger.addHandler(logging.NullHandler())
+
+_ZIP_EOCD_SIGNATURE = b"PK\x05\x06"
+_ZIP_EOCD_SIZE = 22
+_ZIP_MAX_COMMENT_SIZE = 0xFFFF
+_ZIP_MAX_TAIL_SIZE = _ZIP_EOCD_SIZE + _ZIP_MAX_COMMENT_SIZE  # 22 + 65535 = 65557
+
+
+def _is_zipfile_tail(tail: bytes) -> bool:
+    """Return True if ``tail`` is the trailing bytes of a valid zip file.
+
+    ``zipfile.is_zipfile`` needs a seekable file and validates the
+    end-of-central-directory record found in the last ``_ZIP_MAX_TAIL_SIZE``
+    bytes.  This equivalent check only needs those trailing bytes, so a
+    decrypted stream can be validated without buffering the whole payload.
+    """
+    start = tail.rfind(_ZIP_EOCD_SIGNATURE)
+    if start < 0:
+        return False
+    record = tail[start : start + _ZIP_EOCD_SIZE]
+    if len(record) != _ZIP_EOCD_SIZE:
+        return False
+    (comment_size,) = unpack("<H", record[20:22])
+    return len(tail) - start >= _ZIP_EOCD_SIZE + comment_size
+
+
+def _decrypt_stream_to(outfile: BinaryIO, chunks: Iterator[bytes]) -> bytes:
+    """Write ``chunks`` to ``outfile`` and return the trailing bytes written.
+
+    Keeps only the last ``_ZIP_MAX_TAIL_SIZE`` bytes so peak memory stays
+    constant regardless of the payload size.
+    """
+    tail = bytearray()
+    for chunk in chunks:
+        outfile.write(chunk)
+        tail.extend(chunk)
+        if len(tail) > _ZIP_MAX_TAIL_SIZE:
+            del tail[: len(tail) - _ZIP_MAX_TAIL_SIZE]
+    return bytes(tail)
+
+
+class _OleStreamReader:
+    """Read an OLE stream lazily, one sector at a time.
+
+    ``olefile.OleFileIO.openstream`` eagerly loads the entire stream into a
+    BytesIO (see the ``FIXME`` on ``olefile.OleStream``), which dominates
+    decryption peak memory for large ``EncryptedPackage`` streams.  This reader
+    follows the FAT chain on demand while still exposing the ``seek``/``read``
+    interface the decryption routines expect.
+    """
+
+    def __init__(self, ole: olefile.OleFileIO, name: str) -> None:
+        sid = ole._find(name)
+        entry = ole.direntries[sid]
+        self._ole = ole
+        self._size = entry.size
+        self._start_sect = entry.isectStart
+        self._sectorsize = ole.sectorsize
+        self._fat = ole.fat
+        self._pos = 0
+        # Cursor: the FAT sector ``_cur_sect`` holds stream offset ``_cur_offset``.
+        self._cur_sect = entry.isectStart
+        self._cur_offset = 0
+
+    def __enter__(self) -> _OleStreamReader:
+        return self
+
+    def __exit__(self, exc_type, exc_value, traceback) -> bool:
+        return False
+
+    def tell(self) -> int:
+        return self._pos
+
+    def seek(self, offset: int, whence: int = 0) -> int:
+        if whence == 0:
+            pos = offset
+        elif whence == 1:
+            pos = self._pos + offset
+        elif whence == 2:
+            pos = self._size + offset
+        else:
+            raise ValueError("invalid whence ({})".format(whence))
+        if pos < 0:
+            pos = 0
+        self._pos = pos
+        return pos
+
+    def _advance_to(self, stream_offset: int) -> None:
+        if stream_offset < self._cur_offset:
+            # Rewind. The decryption routines only seek backwards to 0, so this
+            # is cheap in practice.
+            self._cur_sect = self._start_sect
+            self._cur_offset = 0
+        while stream_offset >= self._cur_offset + self._sectorsize:
+            next_sect = self._fat[self._cur_sect] & 0xFFFFFFFF
+            if not (0 <= next_sect < len(self._fat)):
+                break
+            self._cur_sect = next_sect
+            self._cur_offset += self._sectorsize
+
+    def read(self, n: int = -1) -> bytes:
+        if n is None or n < 0:
+            n = self._size - self._pos
+        n = min(n, self._size - self._pos)
+        if n <= 0:
+            return b""
+
+        self._advance_to(self._pos)
+        parts = []
+        remaining = n
+        while remaining > 0:
+            if not (0 <= self._cur_sect < len(self._fat)):
+                break
+            offset_in_sector = self._pos - self._cur_offset
+            if offset_in_sector >= self._sectorsize:
+                break
+            self._ole.fp.seek(
+                self._sectorsize * (self._cur_sect + 1) + offset_in_sector
+            )
+            want = min(remaining, self._sectorsize - offset_in_sector)
+            data = self._ole.fp.read(want)
+            if not data:
+                break
+            parts.append(data)
+            self._pos += len(data)
+            remaining -= len(data)
+            if self._pos >= self._cur_offset + self._sectorsize:
+                self._cur_sect = self._fat[self._cur_sect] & 0xFFFFFFFF
+                self._cur_offset += self._sectorsize
+        return b"".join(parts)
+
+
+def _open_stream(ole: olefile.OleFileIO, name: str) -> BinaryIO:
+    """Open ``name`` for streaming reads, falling back for mini-FAT streams.
+
+    Large streams live in the regular FAT and can be read lazily; small streams
+    use the mini-FAT, which ``_OleStreamReader`` does not implement, so delegate
+    those (tiny) streams to ``olefile``.
+    """
+    sid = ole._find(name)
+    entry = ole.direntries[sid]
+    if entry.size >= ole.minisectorcutoff:
+        return _OleStreamReader(ole, name)
+    return ole.openstream(name)
 
 
 def _is_ooxml(file):
@@ -256,8 +403,8 @@ class OOXMLFile(base.BaseOfficeFile):
         msoffcrypto.exceptions.DecryptionError: Document is not encrypted
         """
         if self.type == "agile":
-            with self.file.openstream("EncryptedPackage") as stream:
-                if verify_integrity:
+            if verify_integrity:
+                with self.file.openstream("EncryptedPackage") as stream:
                     verified = ECMA376Agile.verify_integrity(
                         self.secret_key,
                         self.info["keyDataSalt"],
@@ -272,24 +419,29 @@ class OOXMLFile(base.BaseOfficeFile):
                             "Payload integrity verification failed"
                         )
 
-                obuf = ECMA376Agile.decrypt(
-                    self.secret_key,
-                    self.info["keyDataSalt"],
-                    self.info["keyDataHashAlgorithm"],
-                    stream,
+            with _open_stream(self.file, "EncryptedPackage") as stream:
+                tail = _decrypt_stream_to(
+                    outfile,
+                    ECMA376Agile.decrypt_stream(
+                        self.secret_key,
+                        self.info["keyDataSalt"],
+                        self.info["keyDataHashAlgorithm"],
+                        stream,
+                    ),
                 )
-            outfile.write(obuf)
         elif self.type == "standard":
-            with self.file.openstream("EncryptedPackage") as stream:
-                obuf = ECMA376Standard.decrypt(self.secret_key, stream)
-            outfile.write(obuf)
+            with _open_stream(self.file, "EncryptedPackage") as stream:
+                tail = _decrypt_stream_to(
+                    outfile,
+                    ECMA376Standard.decrypt_stream(self.secret_key, stream),
+                )
         elif self.type == "plain":
             raise exceptions.DecryptionError("Document is not encrypted")
         else:
             raise exceptions.DecryptionError("Unsupported encryption method")
 
         # If the file is successfully decrypted, there must be a valid OOXML file, i.e. a valid zip file
-        if not zipfile.is_zipfile(io.BytesIO(obuf)):
+        if not _is_zipfile_tail(tail):
             raise exceptions.InvalidKeyError(
                 "The file could not be decrypted with this password"
             )
