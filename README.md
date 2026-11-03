@@ -220,7 +220,7 @@ poetry run coverage run -m pytest -v
 * [x] Support OOXML encryption
 * [ ] Support other encryption
 * [ ] Isolate parser
-* [ ] Redesign APIs (v6.0.0)
+* [ ] Redesign APIs
 
 ## Resources
 
