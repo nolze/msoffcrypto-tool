@@ -82,6 +82,10 @@ def _parseinfo_agile(ole):
         "http://schemas.microsoft.com/office/2006/keyEncryptor/password", "encryptedKey"
     )[0]
     spinValue = int(password_node.getAttribute("spinCount"))
+    # [MS-OFFCRYPTO] 2.3.4.10 SpinCount: An unsigned integer that specifies the number of times to iterate on a hash of a password. It MUST NOT be greater than 10,000,000.
+    # https://learn.microsoft.com/en-us/openspecs/office_file_formats/ms-offcrypto/87020a34-e73f-4139-99bc-bbdf6cf6fa55
+    if not 0 <= spinValue <= 10_000_000:
+        raise exceptions.DecryptionError("Agile spinCount must be between 0 and 10000000")
     encryptedKeyValue = base64.b64decode(
         password_node.getAttribute("encryptedKeyValue")
     )
