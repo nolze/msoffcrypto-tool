@@ -1,4 +1,11 @@
 
+v6.1.0 / 2026-11-04
+===================
+
+  * (BREAKING) Drop support for Python 3.10
+  * Fix(ooxml): raise DecryptionError when spinValue is greater than 10,000,000 (reported by @zhangyan8216)
+  * Fix `is_encrypted()` on an XLS stream ending in a partial record header (@usmanmateen, [#106](https://github.com/nolze/msoffcrypto-tool/pull/106))
+
 v6.0.0 / 2026-01-12
 ===================
 

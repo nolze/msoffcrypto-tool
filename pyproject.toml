@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "msoffcrypto-tool"
-version = "6.0.0"
+version = "6.1.0"
 description = "Python tool and library for decrypting and encrypting MS Office files using a password or other keys"
 license = "MIT"
 homepage = "https://github.com/nolze/msoffcrypto-tool"
