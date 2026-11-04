@@ -462,8 +462,11 @@ class ECMA376Agile:
         acutal_hash = acutal_hash.digest()
 
         expected_hash = _decrypt_aes_cbc(encryptedVerifierHashValue, key2, saltValue)
+        # NOTE: The decrypted verifier hash is padded to the block size and must be
+        # truncated to the hash size before comparing (e.g. 20 bytes for SHA1)
+        expected_hash = expected_hash[: hashCalc().digest_size]
 
-        return acutal_hash == expected_hash
+        return hmac.compare_digest(acutal_hash, expected_hash)
 
     @staticmethod
     def verify_integrity(
@@ -487,14 +490,17 @@ class ECMA376Agile:
         iv2 = hashCalc(keyDataSalt + blkKey_dataIntegrity2).digest()
         iv2 = iv2[:keyDataBlockSize]
 
-        hmacKey = _decrypt_aes_cbc(encryptedHmacKey, secretKey, iv1)
-        hmacValue = _decrypt_aes_cbc(encryptedHmacValue, secretKey, iv2)
+        # NOTE: The decrypted HMAC key and value are padded to the block size and must
+        # be truncated to the hash size (e.g. 20 bytes for SHA1)
+        hashSize = hashCalc().digest_size
+        hmacKey = _decrypt_aes_cbc(encryptedHmacKey, secretKey, iv1)[:hashSize]
+        hmacValue = _decrypt_aes_cbc(encryptedHmacValue, secretKey, iv2)[:hashSize]
 
         msg_hmac = hmac.new(hmacKey, stream.read(), hashCalc)
         actualHmac = msg_hmac.digest()
         stream.seek(0)
 
-        return hmacValue == actualHmac
+        return hmac.compare_digest(hmacValue, actualHmac)
 
     @staticmethod
     def makekey_from_privkey(privkey, encryptedKeyValue):
