@@ -102,15 +102,15 @@ def _parseCurrentUserAtom(blob):
     # logger.debug(rh)
 
     # ...Sub-fields are further specified in the following table.
-    assert rh.recVer == 0x0
-    assert rh.recInstance == 0x000
-    assert rh.recType == 0x0FF6
+    if rh.recVer != 0x0 or rh.recInstance != 0x000 or rh.recType != 0x0FF6:
+        raise exceptions.ParseError("Invalid CurrentUserAtom record header")
 
     (size,) = unpack("<I", blob.read(4))
     # logger.debug(hex(size))
 
     # size (4 bytes): ...It MUST be 0x00000014.
-    assert size == 0x00000014
+    if size != 0x00000014:
+        raise exceptions.ParseError("Invalid CurrentUserAtom size")
 
     # headerToken (4 bytes): An unsigned integer that specifies
     # a token used to identify whether the file is encrypted.
@@ -226,12 +226,10 @@ def _parseUserEditAtom(blob):
     # logger.debug(rh)
 
     # ...Sub-fields are further specified in the following table.
-    assert rh.recVer == 0x0
-    assert rh.recInstance == 0x000
-    assert rh.recType == 0x0FF5
-    assert (
-        rh.recLen == 0x0000001C or rh.recLen == 0x00000020
-    )  # 0x0000001c + len(encryptSessionPersistIdRef)
+    if rh.recVer != 0x0 or rh.recInstance != 0x000 or rh.recType != 0x0FF5:
+        raise exceptions.ParseError("Invalid UserEditAtom record header")
+    if rh.recLen not in (0x0000001C, 0x00000020):  # 0x0000001c + len(encryptSessionPersistIdRef)
+        raise exceptions.ParseError("Invalid UserEditAtom record length")
 
     (lastSlideIdRef,) = unpack("<I", blob.read(4))
     (version,) = unpack("<H", blob.read(2))
@@ -383,9 +381,8 @@ def _parsePersistDirectoryAtom(blob):
     # logger.debug(rh)
 
     # ...Sub-fields are further specified in the following table.
-    assert rh.recVer == 0x0
-    assert rh.recInstance == 0x000
-    assert rh.recType == 0x1772
+    if rh.recVer != 0x0 or rh.recInstance != 0x000 or rh.recType != 0x1772:
+        raise exceptions.ParseError("Invalid PersistDirectoryAtom record header")
 
     _rgPersistDirEntry = blob.read(rh.recLen)
     _rgPersistDirEntry = io.BytesIO(_rgPersistDirEntry)
@@ -436,10 +433,12 @@ def _parseCryptSession10Container(blob):
     # logger.debug(rh)
 
     # ...Sub-fields are further specified in the following table.
-    assert rh.recVer == 0xF
+    if rh.recVer != 0xF:
+        raise exceptions.ParseError("Invalid CryptSession10Container recVer")
     # The specified value fails
     # assert rh.recInstance == 0x000
-    assert rh.recType == 0x2F14
+    if rh.recType != 0x2F14:
+        raise exceptions.ParseError("Invalid CryptSession10Container recType")
 
     data = blob.read(rh.recLen)
 
@@ -587,7 +586,8 @@ class Ppt97File(base.BaseOfficeFile):
         vMajor, vMinor = unpack("<HH", encryptionVersionInfo)
         logger.debug("[*] encryption version: {} {}".format(vMajor, vMinor))
 
-        assert vMajor in [0x0002, 0x0003, 0x0004] and vMinor == 0x0002  # RC4 CryptoAPI
+        if vMajor not in [0x0002, 0x0003, 0x0004] or vMinor != 0x0002:  # RC4 CryptoAPI
+            raise exceptions.DecryptionError("Unsupported encryption method")
 
         info = _parse_header_RC4CryptoAPI(encryptionInfo)
         if DocumentRC4CryptoAPI.verifypw(

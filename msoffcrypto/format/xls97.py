@@ -488,7 +488,8 @@ class Xls97File(base.BaseOfficeFile):
 
         (num,) = unpack("<H", workbook.data.read(2))
 
-        assert num == 2057  # BOF
+        if num != 2057:  # BOF
+            raise exceptions.ParseError("Workbook stream does not start with BOF")
 
         (size,) = unpack("<H", workbook.data.read(2))
         workbook.data.read(size)  # Skip BOF
@@ -671,7 +672,8 @@ class Xls97File(base.BaseOfficeFile):
         workbook = _BIFFStream(self.data.workbook)
 
         (num,) = unpack("<H", workbook.data.read(2))
-        assert num == 2057
+        if num != 2057:
+            raise exceptions.ParseError("Workbook stream does not start with BOF")
 
         (size,) = unpack("<H", workbook.data.read(2))
         workbook.data.read(size)
