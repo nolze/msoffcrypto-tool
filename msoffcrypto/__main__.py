@@ -61,6 +61,9 @@ parser.add_argument("outfile", nargs="?", type=argparse.FileType("wb"), help="ou
 def main():
     args = parser.parse_args()
 
+    if args.infile is None:
+        parser.error("infile is required (no input file given)")
+
     if args.verbose:
         logger.removeHandler(logging.NullHandler())
         logging.basicConfig(level=logging.DEBUG, format="%(message)s")
