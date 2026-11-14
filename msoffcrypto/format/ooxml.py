@@ -4,6 +4,7 @@ import logging
 import zipfile
 from struct import unpack
 from xml.dom.minidom import parseString
+from xml.parsers.expat import ExpatError
 
 import olefile
 
@@ -62,7 +63,10 @@ def _parseinfo_standard(ole):
 
 def _parseinfo_agile(ole):
     ole.seek(8)
-    xml = parseString(ole.read())
+    try:
+        xml = parseString(ole.read())
+    except ExpatError as e:
+        raise exceptions.ParseError("Malformed agile EncryptionInfo XML") from e
     keyDataSalt = base64.b64decode(
         xml.getElementsByTagName("keyData")[0].getAttribute("saltValue")
     )
