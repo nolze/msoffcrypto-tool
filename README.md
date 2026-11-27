@@ -51,7 +51,7 @@ To check if the file is encrypted or not, use `-t` flag:
 msoffcrypto-tool document.doc --test -v
 ```
 
-It returns `1` if the file is encrypted, `0` if not.
+It exits with status `0` if the file is encrypted, `1` if not.
 
 #### Encryption (OOXML only, experimental)
 
